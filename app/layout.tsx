@@ -1,14 +1,17 @@
-import { Geist, Geist_Mono, Inter } from "next/font/google"
+import { Tajawal } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import Layout from "@/components/app-sidebar"
+import { Toaster } from "@/components/ui/sonner"
+import TitleBar from "@/components/TitleBar"
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'})
-
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
+const tajawal = Tajawal({
+  subsets: ["arabic"],
+  weight: ["400", "500", "700"],
+  variable: "--font-tajawal", // هذا الاسم سنستخدمه في Tailwind
 })
 
 export default function RootLayout({
@@ -17,13 +20,18 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
-    >
+    <html lang="ar" suppressHydrationWarning className={cn(tajawal.variable)}>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        {/* <ThemeProvider> */}
+        <TooltipProvider>
+          <TitleBar />
+          <main className="flex flex-1 flex-row overflow-hidden">
+            <div className="flex-1 overflow-auto">{children}</div>
+            <Layout />
+          </main>
+          <Toaster />
+        </TooltipProvider>
+        {/* </ThemeProvider> */}
       </body>
     </html>
   )
