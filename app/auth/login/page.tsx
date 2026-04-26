@@ -1,20 +1,17 @@
 "use client"
 
-import { useActionState, useEffect, useState } from "react"
-import { useFormStatus } from "react-dom"
-import { useRouter } from "next/navigation" // ✅ التصحيح
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@supabase/ssr"
-import { login } from "./actions"
 
-function SubmitButton() {
-  const { pending } = useFormStatus()
+function SubmitButton({ loading }: { loading: boolean }) {
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={loading}
       className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-lg font-semibold text-white transition-all hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
     >
-      {pending ? (
+      {loading ? (
         <span className="flex items-center justify-center gap-2">
           <svg
             className="h-5 w-5 animate-spin"
@@ -46,9 +43,10 @@ function SubmitButton() {
 }
 
 export default function LoginPage() {
-  const [state, formAction] = useActionState(login, { error: "" })
-  const [checkingSession, setCheckingSession] = useState(true)
   const router = useRouter()
+  const [checkingSession, setCheckingSession] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     const checkUser = async () => {
@@ -56,20 +54,50 @@ export default function LoginPage() {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
       )
+
       const {
         data: { user },
       } = await supabase.auth.getUser()
+
       if (user) {
-        console.log(
-          "👤 [LoginPage] User already logged in, redirecting from client"
-        )
         router.replace("/")
       } else {
         setCheckingSession(false)
       }
     }
+
     checkUser()
   }, [router])
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setLoading(true)
+    setError("")
+
+    const formData = new FormData(e.currentTarget)
+
+    const email = formData.get("email")
+    const password = formData.get("password")
+
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    })
+
+    const data = await res.json()
+
+    setLoading(false)
+
+    if (!res.ok) {
+      setError(data.error)
+      return
+    }
+
+    router.replace("/")
+  }
 
   if (checkingSession) {
     return (
@@ -85,6 +113,7 @@ export default function LoginPage() {
       dir="rtl"
     >
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
+        {/* Header */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-2xl font-bold text-white">
             هـ
@@ -95,7 +124,9 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form action={formAction} className="space-y-5">
+        {/* Form */}
+        <form onSubmit={handleLogin} className="space-y-5">
+          {/* Email */}
           <div>
             <label
               htmlFor="email"
@@ -114,6 +145,7 @@ export default function LoginPage() {
             />
           </div>
 
+          {/* Password */}
           <div>
             <label
               htmlFor="password"
@@ -132,13 +164,15 @@ export default function LoginPage() {
             />
           </div>
 
-          {state?.error && (
+          {/* Error */}
+          {error && (
             <div className="rounded-lg bg-red-50 p-3 text-center text-sm text-red-600">
-              {state.error}
+              {error}
             </div>
           )}
 
-          <SubmitButton />
+          {/* Submit */}
+          <SubmitButton loading={loading} />
         </form>
       </div>
     </div>
