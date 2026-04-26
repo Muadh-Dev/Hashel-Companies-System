@@ -49,7 +49,7 @@ export default function TitleBar() {
     }
 
     window.addEventListener("contextmenu", handleContextMenu)
-    window.addEventListener("keydown", handleKeyDown)
+    // window.addEventListener("keydown", handleKeyDown)
 
     return () => {
       window.removeEventListener("contextmenu", handleContextMenu)

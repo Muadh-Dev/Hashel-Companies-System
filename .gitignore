@@ -465,4 +465,19 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Developer tools' files
+.lite_workspace.lua
+
+# Neutralinojs binaries and builds
+/bin
+/dist
+
+# Neutralinojs client (minified)
+neutralino.js
+
+# Neutralinojs related files
+.storage
+*.log
+
 >>>>>>> 306360bdc8080c5d6e0101ca1c6ab7a67f89ca69
