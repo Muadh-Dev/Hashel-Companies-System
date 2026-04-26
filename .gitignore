@@ -481,3 +481,6 @@ neutralino.js
 *.log
 
 >>>>>>> 306360bdc8080c5d6e0101ca1c6ab7a67f89ca69
+
+# Local Netlify folder
+.netlify
