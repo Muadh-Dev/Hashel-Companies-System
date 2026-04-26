@@ -20,14 +20,15 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ar" suppressHydrationWarning className={cn(tajawal.variable)}>
+    <html lang="ar" suppressHydrationWarning className={"no-scrollbar"}>
       <body>
         {/* <ThemeProvider> */}
         <TooltipProvider>
-          <TitleBar />
-          <main className="flex flex-1 flex-row overflow-hidden">
-            <div className="flex-1 overflow-auto">{children}</div>
-            <Layout />
+          <main className="flex h-screen flex-col overflow-hidden">
+            <TitleBar />
+            <div className="no-scrollbar flex-1 overflow-y-auto">
+              <Layout>{children}</Layout>
+            </div>
           </main>
           <Toaster />
         </TooltipProvider>

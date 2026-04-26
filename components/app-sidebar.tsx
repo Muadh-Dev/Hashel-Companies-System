@@ -38,7 +38,7 @@ const initialNavItems: NavItem[] = [
   { id: 6, title: "الإعدادات", url: "/settings", icon: Settings },
 ]
 
-export default function AppSidebar() {
+export default function AppSidebar({ children }: any) {
   const pathname = usePathname()
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false)
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false)
@@ -64,29 +64,29 @@ export default function AppSidebar() {
   if (isAuthPage) return null
   return (
     <div
-      className="sticky flex h-screen bg-white text-right dark:bg-slate-950"
+      className="flex h-screen w-full overflow-hidden bg-amber-200 text-right dark:bg-slate-950"
       dir="rtl"
     >
       {/* زر الموبايل */}
-      <button
+      {/* <button
         onClick={() => setIsMobileOpen(true)}
         className="fixed top-4 right-4 z-50 rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 shadow-sm transition-transform active:scale-95 lg:hidden dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
         aria-label="Open Menu"
       >
         <Menu className="size-5" />
-      </button>
+      </button> */}
 
       {/* خلفية معتمة للموبايل */}
-      {isMobileOpen && (
+      {/* {isMobileOpen && (
         <div
           className="fixed inset-0 z-60 bg-slate-900/40 backdrop-blur-sm transition-opacity lg:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
-      )}
+      )} */}
 
       {/* Sidebar Container */}
       <aside
-        className={`sticky inset-y-0 top-0 right-0 z-70 flex max-h-screen flex-col overflow-y-auto border-l border-slate-200 bg-white transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 dark:border-slate-800 dark:bg-slate-900 ${isMobileOpen ? "w-72 translate-x-0" : "w-0 translate-x-full lg:translate-x-0"} ${isCollapsed ? "lg:w-20" : "lg:w-72"} `}
+        className={`sticky inset-y-0 top-0 right-0 z-70 flex h-screen flex-col border-l border-slate-200 bg-white transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 dark:border-slate-800 dark:bg-slate-900 ${isMobileOpen ? "w-72 translate-x-0" : "w-0 translate-x-full lg:translate-x-0"} ${isCollapsed ? "lg:w-20" : "lg:w-72"} `}
       >
         <div className="flex h-full flex-col overflow-hidden">
           {/* Header Section */}
@@ -200,9 +200,11 @@ export default function AppSidebar() {
           </div>
         </div>
       </aside>
-
+      <div className="dark:b no-scrollbar h-full flex-1 overflow-y-auto bg-white">
+        {children}
+      </div>
       {/* Custom Scrollbar Styling */}
-      <style
+      {/* <style
         dangerouslySetInnerHTML={{
           __html: `
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
@@ -211,7 +213,7 @@ export default function AppSidebar() {
         .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; }
       `,
         }}
-      />
+      /> */}
     </div>
   )
 }
