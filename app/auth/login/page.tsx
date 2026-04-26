@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { useRouter } from "next/navigation" // ✅ التصحيح
-import { createClient } from "@/lib/supabase/supabaseSsrClient" // مسارك الصحيح
+import { createBrowserClient } from "@supabase/ssr"
 import { login } from "./actions"
 
 function SubmitButton() {
@@ -52,7 +52,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const supabase = createClient()
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+      )
       const {
         data: { user },
       } = await supabase.auth.getUser()
