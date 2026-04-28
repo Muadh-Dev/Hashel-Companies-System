@@ -10,19 +10,44 @@ export default function LoginPage() {
       className="flex min-h-screen items-center justify-center bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-950 dark:to-slate-900"
       dir="rtl"
     >
-      <div className="w-full max-w-sm space-y-6 rounded-2xl bg-white p-8 text-center shadow-2xl dark:bg-slate-900">
-        <h1 className="text-2xl font-black text-slate-900 dark:text-white">
-          نظام العمليات
-        </h1>
-        <p className="text-sm text-slate-500">
-          قم بتسجيل الدخول باستخدام حساب Google
-        </p>
+      <div className="w-full max-w-md space-y-8 rounded-3xl border border-slate-100 bg-white p-10 text-center shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        {/* أيقونة رمزية للنظام */}
+        <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <img
+            src="/HashelSMWaiteLogo.png"
+            alt="logo"
+            className="p-2.5 invert dark:invert-0"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+            نظام هاشل للعمليات
+          </h1>
+          <p className="text-base text-slate-500 dark:text-slate-400">
+            منصة الإدارة المركزية والربط الذكي
+          </p>
+        </div>
+
+        <div className="relative py-4">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-slate-200 dark:border-slate-800"></span>
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-2 text-slate-400 dark:bg-slate-900">
+              بوابة الدخول الآمن
+            </span>
+          </div>
+        </div>
 
         <button
           onClick={signInWithGoogle}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 font-medium text-slate-700 shadow transition hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          className="group relative flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white py-4 font-bold text-slate-700 shadow-sm transition-all hover:scale-[1.02] hover:bg-slate-50 hover:shadow-md active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
         >
-          <svg className="h-5 w-5" viewBox="0 0 24 24">
+          <svg
+            className="h-5 w-5 transition-transform group-hover:scale-110"
+            viewBox="0 0 24 24"
+          >
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
               fill="#4285F4"
@@ -40,8 +65,14 @@ export default function LoginPage() {
               fill="#EA4335"
             />
           </svg>
-          تسجيل الدخول باستخدام Google
+          الدخول عبر حساب جوجل
         </button>
+
+        <p className="pt-4 text-[10px] text-slate-400 dark:text-slate-500">
+          جميع الحقوق محفوظة لنظام هاشل © {new Date().getFullYear()}
+          <br />
+          وصول المصرح لهم فقط
+        </p>
       </div>
     </div>
   )

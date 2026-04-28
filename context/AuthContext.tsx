@@ -158,10 +158,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // تسجيل الدخول بـ Google
   const signInWithGoogle = useCallback(async () => {
+    // ✅ نظّف الـ origin من أي port غير ضروري
+    const origin = window.location.origin
+      .replace(/:80$/, "")
+      .replace(/:443$/, "")
+
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${origin}/auth/callback`,
       },
     })
   }, [])

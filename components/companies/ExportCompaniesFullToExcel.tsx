@@ -66,7 +66,12 @@ export default function ExportCompaniesFullToExcel() {
         views: [{ state: "frozen", ySplit: 1 }],
       })
 
-      // تعريف الأعمدة مع مفاتيحها ومجموعاتها
+      // تعريف الأعمدة بالترتيب الصحيح:
+      // A: م, B: رقم الشركة الموحد, C: رقم المنشأة, D: رقم التأمينات, E: مالك الشركة,
+      // F: نوع الكيان, G: رقم السجل التجاري, H: تاريخ انتهاء السجل,
+      // I: رسوم حكومية, J: رسوم السجل التجاري, K: قوى, L: مقيم,
+      // M: إجمالي التكاليف (سيتم حسابه), N: مبلغ الإعفاء, O: سعر الجريدة,
+      // P: عدد التحويلات, Q: عدد التأشيرات, R: تاريخ الإضافة, S: عدد الموظفين.
       const columns = [
         { header: "م", key: "index", width: 8, group: 1 },
         {
@@ -105,21 +110,21 @@ export default function ExportCompaniesFullToExcel() {
         },
         { header: "قوى", key: "qiwa", width: 12, group: 2 },
         { header: "مقيم", key: "muqeem", width: 12, group: 2 },
-        { header: "إجمالي التكاليف", key: "total_costs", width: 15, group: 2 },
-        {
-          header: "عدد التحويلات",
-          key: "transfers_count",
-          width: 15,
-          group: 3,
-        },
-        { header: "عدد التأشيرات", key: "visas_count", width: 15, group: 3 },
+        { header: "إجمالي التكاليف", key: "total_costs", width: 15, group: 2 }, // M
         {
           header: "مبلغ الإعفاء",
           key: "exemption_amount",
           width: 15,
+          group: 3,
+        }, // N (P سابقاً)
+        { header: "سعر الجريدة", key: "newspaper_price", width: 15, group: 3 }, // O (Q سابقاً)
+        {
+          header: "عدد التحويلات",
+          key: "transfers_count",
+          width: 15,
           group: 4,
-        },
-        { header: "سعر الجريدة", key: "newspaper_price", width: 15, group: 4 },
+        }, // P
+        { header: "عدد التأشيرات", key: "visas_count", width: 15, group: 4 }, // Q
         { header: "تاريخ الإضافة", key: "created_at", width: 20, group: 5 },
         { header: "عدد الموظفين", key: "employees_count", width: 15, group: 6 },
       ]
@@ -147,14 +152,13 @@ export default function ExportCompaniesFullToExcel() {
         right: { style: "thin", color: { argb: "CCCCCC" } },
       }
 
-      // ألوان المجموعات
       const groupColors: { [key: number]: string } = {
-        1: "1565C0", // أزرق - معلومات أساسية
-        2: "00838F", // تيل - رسوم وتكاليف
-        3: "6A1B9A", // بنفسجي - تحويلات وتأشيرات
-        4: "C62828", // أحمر - إعفاء وجريدة
-        5: "2E7D32", // أخضر - تاريخ الإضافة
-        6: "37474F", // رمادي غامق - موظفين
+        1: "1565C0", // أزرق
+        2: "00838F", // تيل
+        3: "C62828", // أحمر للإعفاء والجريدة
+        4: "6A1B9A", // بنفسجي للتحويلات والتأشيرات
+        5: "2E7D32", // أخضر
+        6: "37474F", // رمادي
       }
 
       columns.forEach((col: any, index: number) => {
@@ -166,7 +170,6 @@ export default function ExportCompaniesFullToExcel() {
         }
       })
 
-      // دالة لتنسيق التاريخ عربي
       const formatDateArabic = (dateString: string | null): string => {
         if (!dateString) return ""
         const date = new Date(dateString)
@@ -180,7 +183,19 @@ export default function ExportCompaniesFullToExcel() {
 
       // إضافة البيانات
       companies.forEach((company: Company, index: number) => {
-        const row = worksheet.addRow({
+        // استخراج القيم الرقمية
+        const govFees = Number(company.government_fees) || 0
+        const comFees = Number(company.commercial_register_fees) || 0
+        const qiwa = Number(company.qiwa) || 0
+        const muqeem = Number(company.muqeem) || 0
+        const exemption = Number(company.exemption_amount) || 0
+        const newspaper = Number(company.newspaper_price) || 0
+
+        // حساب إجمالي التكاليف = I (govFees) + J (comFees) + K (qiwa) + L (muqeem) + N (exemption) + O (newspaper)
+        const calculatedTotal =
+          govFees + comFees + qiwa + muqeem + exemption + newspaper
+
+        worksheet.addRow({
           index: index + 1,
           unified_number: company.unified_number || "",
           establishment_number: company.establishment_number || "",
@@ -189,23 +204,18 @@ export default function ExportCompaniesFullToExcel() {
           entity_type: company.entity_type || "",
           crNumber: company.crNumber || 0,
           cr_expiry_date: formatDateArabic(company.cr_expiry_date),
-          government_fees: company.government_fees || 0,
-          commercial_register_fees: company.commercial_register_fees || 0,
-          qiwa: company.qiwa || 0,
-          muqeem: company.muqeem || 0,
-          total_costs: company.total_costs || 0,
+          government_fees: govFees,
+          commercial_register_fees: comFees,
+          qiwa: qiwa,
+          muqeem: muqeem,
+          total_costs: calculatedTotal, // الإجمالي المحسوب
+          exemption_amount: exemption,
+          newspaper_price: newspaper,
           transfers_count: company.transfers_count || 0,
           visas_count: company.visas_count || 0,
-          exemption_amount: company.exemption_amount || 0,
-          newspaper_price: company.newspaper_price || 0,
           created_at: formatDateArabic(company.created_at),
           employees_count: company.employees_count || 0,
         })
-
-        // تنسيق رقم الصف
-        const indexCell = row.getCell(1)
-        indexCell.alignment = { horizontal: "center", vertical: "middle" }
-        indexCell.font = { bold: true, size: 11, color: { argb: "37474F" } }
       })
 
       const dataRowCount = worksheet.rowCount
@@ -224,7 +234,6 @@ export default function ExportCompaniesFullToExcel() {
           size: 10,
         }
 
-        // تلوين الصفوف بالتناوب
         if (i % 2 === 0) {
           row.fill = {
             type: "pattern",
@@ -240,7 +249,6 @@ export default function ExportCompaniesFullToExcel() {
         }
 
         row.eachCell((cell, colNumber) => {
-          // حدود الخلية
           cell.border = {
             top: { style: "thin", color: { argb: "E0E0E0" } },
             left: { style: "thin", color: { argb: "E0E0E0" } },
@@ -248,32 +256,31 @@ export default function ExportCompaniesFullToExcel() {
             right: { style: "thin", color: { argb: "E0E0E0" } },
           }
 
-          // تحديد الأعمدة الرقمية (بدون فواصل)
+          // الأعمدة الرقمية (بدون فواصل)
           const numericColumns = [
             7, // crNumber
             9, // government_fees
             10, // commercial_register_fees
             11, // qiwa
             12, // muqeem
-            13, // total_costs
-            14, // transfers_count
-            15, // visas_count
-            16, // exemption_amount
-            17, // newspaper_price
-            19, // employees_count
+            13, // total_costs (M)
+            14, // exemption_amount (N)
+            15, // newspaper_price (O)
+            16, // transfers_count (P)
+            17, // visas_count (Q)
+            19, // employees_count (S)
           ]
 
           if (numericColumns.includes(colNumber)) {
             const numValue = Number(cell.value)
             if (!isNaN(numValue)) {
               cell.value = numValue
-              // بدون numFmt لإزالة الفواصل
               cell.font = {
                 name: "Arial",
                 size: 10,
                 bold: true,
               }
-              // إبراز بعض الأعمدة الهامة بلون خلفية خفيف
+              // تمييز بعض الخلايا
               if (colNumber === 13) {
                 // إجمالي التكاليف
                 cell.fill = {
@@ -282,7 +289,7 @@ export default function ExportCompaniesFullToExcel() {
                   fgColor: { argb: "E0F2F1" },
                 }
                 cell.font = { ...cell.font, color: { argb: "00695C" } }
-              } else if (colNumber === 16) {
+              } else if (colNumber === 14) {
                 // مبلغ الإعفاء
                 cell.fill = {
                   type: "pattern",
@@ -296,7 +303,7 @@ export default function ExportCompaniesFullToExcel() {
 
           // تنسيق أعمدة التاريخ
           if (colNumber === 8 || colNumber === 18) {
-            // cr_expiry_date, created_at
+            // H (انتهاء السجل) و R (تاريخ الإضافة)
             cell.font = {
               name: "Arial",
               size: 10,
@@ -338,7 +345,7 @@ export default function ExportCompaniesFullToExcel() {
     <button
       onClick={handleExport}
       disabled={isExporting}
-      className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+      className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white shadow-md transition-colors hover:bg-blue-700 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-400"
     >
       {isExporting ? (
         <>
@@ -358,7 +365,7 @@ export default function ExportCompaniesFullToExcel() {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
             />
           </svg>
-          جاري التصدير...
+          جاري تصدير الشركات...
         </>
       ) : (
         <>
@@ -372,10 +379,10 @@ export default function ExportCompaniesFullToExcel() {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
             />
           </svg>
-          تصدير إلى Excel
+          تصدير الشركات إلى Excel
         </>
       )}
     </button>

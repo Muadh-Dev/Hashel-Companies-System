@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* إعداداتك هنا */
+  unoptimized: true,
 }
 
 module.exports = nextConfig
