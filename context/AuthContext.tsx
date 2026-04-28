@@ -7,219 +7,92 @@ import React, {
   useState,
   useCallback,
 } from "react"
-import { supabase } from "@/lib/supabase/supabaseSsrClient" // ⚠️ تأكد أنه عميل متصفح (createBrowserClient)
-import { useRouter } from "next/navigation"
-
-export type AuthUser = {
-  id: string
-  name: string
-  email: string
-  is_admin: boolean
-}
+import { supabase } from "@/lib/supabase/supabaseSsrClient"
+import type { Session, AuthChangeEvent } from "@supabase/supabase-js"
 
 interface AuthContextType {
-  user: AuthUser | null
+  session: Session | null
   loading: boolean
   error: string | null
-  signInWithGoogle: () => Promise<void>
-  signOut: () => Promise<void>
-  retryAuthorization: () => Promise<void>
+  signOut: () => void
+  retry: () => void
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType>({} as AuthContextType)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
 
-  // جلب الملف الشخصي من جدول Users
-  const fetchProfile = useCallback(async (userId: string, email?: string) => {
-    try {
-      // أولاً: البحث بالسجل المربوط مسبقاً عبر auth_id
-      const { data: byAuth } = await supabase
-        .from("Users")
-        .select("id, name, email, is_admin, auth_id")
-        .eq("auth_id", userId)
-        .maybeSingle()
-
-      if (byAuth) {
-        setUser({
-          id: byAuth.id,
-          name: byAuth.name,
-          email: byAuth.email,
-          is_admin: byAuth.is_admin,
-        })
-        setError(null)
-        return
-      }
-
-      // ثانياً: إذا لم يوجد رابط، وكان لدينا البريد الإلكتروني (جوجل يعيده)
-      if (email) {
-        const { data: byEmail } = await supabase
-          .from("Users")
-          .select("id, name, email, is_admin, auth_id")
-          .eq("email", email)
-          .maybeSingle()
-
-        if (byEmail) {
-          if (byEmail.auth_id) {
-            // حالة نادرة: البريد موجود لكن auth_id مختلف
-            setUser(null)
-            setError("هذا الحساب مرتبط بجلسة أخرى.")
-            return
-          }
-
-          // ربط السجل الحالي بمعرّف المصادقة الجديد
-          const { error: updateError } = await supabase
-            .from("Users")
-            .update({ auth_id: userId })
-            .eq("id", byEmail.id)
-
-          if (updateError) throw updateError
-
-          setUser({
-            id: byEmail.id,
-            name: byEmail.name,
-            email: byEmail.email,
-            is_admin: byEmail.is_admin,
-          })
-          setError(null)
-          return
-        }
-      }
-
-      // لم يُعثر على سجل مطلقاً ← لا صلاحية
-      setUser(null)
-      setError("لم يتم منحك صلاحية بعد. يرجى التواصل مع مدير النظام.")
-    } catch (err: any) {
-      console.error("❌ خطأ في جلب البروفايل:", err)
-      setUser(null)
-      setError("حدث خطأ أثناء التحقق من الصلاحية.")
-    }
-  }, [])
-
-  // إعادة المحاولة (لزر "المحاولة مرة أخرى")
-  const retryAuthorization = useCallback(async () => {
+  // دالة إعادة المحاولة (في حالة فشل مؤقت)
+  const retry = useCallback(() => {
     setLoading(true)
     setError(null)
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (session?.user) {
-        await fetchProfile(session.user.id, session.user.email)
-      } else {
-        setUser(null)
-        setError(null)
-      }
-    } catch (err: any) {
-      console.error("❌ خطأ في retryAuthorization:", err)
-      setUser(null)
-      setError("تعذرت إعادة المحاولة. تحقق من اتصالك.")
-    } finally {
-      setLoading(false)
-    }
-  }, [fetchProfile])
+    // مجرد إعادة فحص الجلسة
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setSession(data.session)
+      })
+      .catch((err) => {
+        setError(err.message)
+      })
+      .finally(() => setLoading(false))
+  }, [])
 
-  // تهيئة الجلسة عند التحميل
+  // التهيئة الأولى
   useEffect(() => {
-    const initSession = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-        if (session?.user) {
-          await fetchProfile(session.user.id, session.user.email)
-        } else {
-          setUser(null)
+    let mounted = true
+    setLoading(true)
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (mounted) {
+          setSession(data.session)
           setError(null)
         }
-      } catch (err: any) {
-        console.error("❌ فشل تهيئة الجلسة:", err)
-        setUser(null)
-        setError("حدث خطأ أثناء تهيئة الجلسة.")
-      } finally {
-        setLoading(false)
-      }
-    }
+      })
+      .catch((err) => {
+        if (mounted) setError(err.message)
+      })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
 
-    initSession()
-
-    // الاستماع لتغيرات حالة المصادقة
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        // إعادة تعيين التحميل دفاعياً (لن يكون true عادة)
-        setLoading(false)
-
-        if (event === "SIGNED_OUT") {
-          setUser(null)
+    // الاستماع لتغيرات المصادقة
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event: AuthChangeEvent, newSession: Session | null) => {
+        if (mounted) {
+          setSession(newSession)
           setError(null)
-          return
-        }
-
-        try {
-          if (session?.user) {
-            await fetchProfile(session.user.id, session.user.email)
-          } else {
-            setUser(null)
-            setError(null)
-          }
-        } catch (err: any) {
-          console.error("❌ خطأ في مستمع المصادقة:", err)
-          setUser(null)
-          setError("حدث خطأ غير متوقع.")
+          setLoading(false)
         }
       }
     )
 
     return () => {
-      authListener?.subscription.unsubscribe()
+      mounted = false
+      listener.subscription.unsubscribe()
     }
-  }, [fetchProfile])
-
-  // تسجيل الدخول بـ Google
-  const signInWithGoogle = useCallback(async () => {
-    const origin = window.location.origin
-      .replace(/:80$/, "")
-      .replace(/:443$/, "")
-
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${origin}/auth/callback`,
-      },
-    })
   }, [])
 
-  const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
-    setUser(null)
+  const signOut = useCallback(() => {
+    supabase.auth.signOut().catch(console.error)
+    setSession(null)
     setError(null)
-    router.push("/login")
-  }, [router])
+  }, [])
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        error,
-        signInWithGoogle,
-        signOut,
-        retryAuthorization,
-      }}
-    >
+    <AuthContext.Provider value={{ session, loading, error, signOut, retry }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
-  return context
+export const useAuth = () => {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error("useAuth must be inside AuthProvider")
+  return ctx
 }

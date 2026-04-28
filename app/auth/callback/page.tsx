@@ -10,23 +10,26 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const code = searchParams.get("code")
+    if (!code) {
+      router.replace("/login?error=no_code")
+      return
+    }
 
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }: any) => {
-        if (!error) {
-          router.replace("/") // أو أي مسار محمي
+    supabase.auth
+      .exchangeCodeForSession(code)
+      .then(({ error }: any) => {
+        if (error) {
+          router.replace(`/login?error=${encodeURIComponent(error.message)}`)
         } else {
-          router.replace("/login?error=exchange_failed")
+          router.replace("/dashboard")
         }
       })
-    } else {
-      router.replace("/login?error=no_code")
-    }
+      .catch(() => router.replace("/login?error=unknown"))
   }, [router, searchParams])
 
   return (
-    <div className="flex h-screen items-center justify-center">
-      <p>إتمام تسجيل الدخول...</p>
+    <div className="flex h-screen items-center justify-center text-gray-600">
+      جارٍ تسجيل الدخول...
     </div>
   )
 }
