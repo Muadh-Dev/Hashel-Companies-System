@@ -17,7 +17,7 @@ import {
   LucideIcon,
   User,
 } from "lucide-react"
-import { useAuth } from "@/context/AuthContext"
+import { AuthUser, useAuth } from "@/context/AuthContext"
 import LogoutButton from "./LogoutConfirmModal"
 
 interface NavItem {
@@ -35,6 +35,15 @@ const initialNavItems: NavItem[] = [
   { id: 5, title: "الرصيد البنكي", url: "/banking", icon: CreditCard },
   { id: 6, title: "الإعدادات", url: "/settings", icon: Settings },
 ]
+
+const PERMISSION_MAP: Record<
+  string,
+  keyof NonNullable<AuthUser["permissions"]>
+> = {
+  "/companies": "companies",
+  "/linking": "linking",
+  "/banking": "bankBalance",
+}
 
 export default function AppSidebar({
   children,
@@ -133,10 +142,15 @@ export default function AppSidebar({
             <ul className="space-y-1.5">
               {initialNavItems
                 .filter((item) => {
-                  if (item.url === "/banking" && user?.is_admin === false) {
-                    return false
+                  const permKey = PERMISSION_MAP[item.url]
+                  if (!permKey) return true // ليست محمية، تظهر للجميع
+
+                  // إذا كان المستخدم لديه صلاحيات، افحصها، وإلا اعتمد على is_admin للتوافق المؤقت
+                  if (user?.permissions) {
+                    return user.permissions[permKey] !== "none"
                   }
-                  return true
+                  // توافق مع البيانات القديمة
+                  return user?.is_admin === true
                 })
                 .map((item) => {
                   const isActive = pathname === item.url
@@ -146,11 +160,6 @@ export default function AppSidebar({
                         href={item.url}
                         onClick={() => {
                           if (window.innerWidth < 1024) setIsMobileOpen(false)
-                          if (
-                            user?.is_admin == false &&
-                            item.url == "/linking"
-                          ) {
-                          }
                         }}
                         className={`relative flex w-full items-center rounded-xl py-3 transition-all duration-200 outline-none ${
                           isCollapsed && !isMobileOpen
@@ -200,6 +209,17 @@ export default function AppSidebar({
                   <div className="flex min-w-0 animate-in flex-col fade-in slide-in-from-bottom-2">
                     <span className="text-xm truncate leading-none font-bold text-slate-800 dark:text-slate-100">
                       {user?.name || "مستخدم"}
+                      {user?.role && (
+                        <span className="mr-1 text-[10px] text-slate-400">
+                          (
+                          {user.role === "مدير"
+                            ? "مدير"
+                            : user.role === "مشرف"
+                              ? "مشرف"
+                              : "مخصص"}
+                          )
+                        </span>
+                      )}
                     </span>
                   </div>
                   <LogoutButton />

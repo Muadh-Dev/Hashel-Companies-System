@@ -8,6 +8,19 @@ import { toast } from "sonner"
 import { User as UserType } from "@/hooks/useUsers"
 import { addUser, updateUser } from "./uploadUsers"
 
+// تعريف الأنواع
+type Role = "مدير" | "مشرف" | "مخصص"
+type PermissionLevel = "none" | "view" | "edit"
+
+interface Permissions {
+  companies: PermissionLevel
+  linking: PermissionLevel
+  bankBalance: PermissionLevel
+  sponsorshipTransfer: PermissionLevel
+  visaIssuance: PermissionLevel
+  annualRenewal: PermissionLevel
+}
+
 type Props = {
   isOpen: boolean
   onClose: () => void
@@ -19,8 +32,16 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
   const isEditMode = !!initialData
 
   const [name, setName] = useState("")
-  const [email, setEmail] = useState("") // الجزء قبل @
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [email, setEmail] = useState("")
+  const [role, setRole] = useState<Role>("مخصص")
+  const [permissions, setPermissions] = useState<Permissions>({
+    companies: "none",
+    linking: "none",
+    bankBalance: "none",
+    sponsorshipTransfer: "none",
+    visaIssuance: "none",
+    annualRenewal: "none",
+  })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
@@ -28,21 +49,80 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
       if (isEditMode && initialData) {
         setName(initialData.name || "")
         const emailName = initialData.email?.split("@")[0] || ""
-        setEmail(emailName) // سنستخدمه لعرض النص فقط
-        setIsAdmin(initialData.is_admin || false)
+        setEmail(emailName)
+
+        // تحديد الدور بناءً على البيانات المحفوظة
+        if (initialData.role === "مدير" || (initialData as any).is_admin) {
+          setRole("مدير")
+        } else if (initialData.role === "مشرف") {
+          setRole("مشرف")
+        } else {
+          setRole("مخصص")
+        }
+
+        // تعبئة الصلاحيات إن وجدت
+        if ((initialData as any).permissions) {
+          setPermissions((initialData as any).permissions as Permissions)
+        } else {
+          setPermissions({
+            companies: "none",
+            linking: "none",
+            bankBalance: "none",
+            sponsorshipTransfer: "none",
+            visaIssuance: "none",
+            annualRenewal: "none",
+          })
+        }
       } else {
+        // وضع الإضافة
         setName("")
         setEmail("")
-        setIsAdmin(false)
+        setRole("مخصص")
+        setPermissions({
+          companies: "none",
+          linking: "none",
+          bankBalance: "none",
+          sponsorshipTransfer: "none",
+          visaIssuance: "none",
+          annualRenewal: "none",
+        })
       }
     }
   }, [isOpen, isEditMode, initialData])
 
+  // ضبط الصلاحيات تلقائيًا حسب الدور
+  useEffect(() => {
+    if (role === "مدير") {
+      setPermissions({
+        companies: "edit",
+        linking: "edit",
+        bankBalance: "edit",
+        sponsorshipTransfer: "edit",
+        visaIssuance: "edit",
+        annualRenewal: "edit",
+      })
+    } else if (role === "مشرف") {
+      setPermissions({
+        companies: "edit",
+        linking: "edit",
+        bankBalance: "none",
+        sponsorshipTransfer: "edit",
+        visaIssuance: "edit",
+        annualRenewal: "edit",
+      })
+    }
+    // في حالة "مخصص" نترك الصلاحيات دون تغيير (يحددها المستخدم)
+  }, [role])
+
   const isFormInvalid = useMemo(() => {
     if (!name.trim()) return true
-    if (!isEditMode && !email.trim()) return true // الإيميل مطلوب فقط في الإضافة
+    if (!isEditMode && !email.trim()) return true
+    if (role === "مخصص") {
+      const hasAny = Object.values(permissions).some((p) => p !== "none")
+      if (!hasAny) return true
+    }
     return false
-  }, [name, email, isEditMode])
+  }, [name, email, isEditMode, role, permissions])
 
   const handleSave = async () => {
     setIsSubmitting(true)
@@ -50,19 +130,19 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
       let user: UserType
 
       if (isEditMode && initialData) {
-        // في التعديل: فقط الاسم والصلاحية
         user = await updateUser(initialData.id, {
           name: name.trim(),
-          is_admin: isAdmin,
+          role,
+          permissions,
         })
         toast.success("تم تعديل بيانات المستخدم")
       } else {
-        // في الإضافة: الاسم والإيميل والصلاحية
         const fullEmail = email.trim() + "@gmail.com"
         user = await addUser({
           name: name.trim(),
           email: fullEmail,
-          is_admin: isAdmin,
+          role,
+          permissions,
         })
         toast.success("تم إضافة المستخدم بنجاح")
       }
@@ -75,6 +155,34 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
       setIsSubmitting(false)
     }
   }
+
+  // لتحويل مستوى الصلاحية إلى نص عربي
+  const permissionToLabel = (level: PermissionLevel): string => {
+    switch (level) {
+      case "view":
+        return "مشاهدة"
+      case "edit":
+        return "تعديل"
+      default:
+        return "ممنوع"
+    }
+  }
+
+  // لتحويل النص العربي إلى PermissionLevel
+  const labelToPermission = (label: string): PermissionLevel => {
+    if (label === "مشاهدة") return "view"
+    if (label === "تعديل") return "edit"
+    return "none"
+  }
+
+  const permissionFields: { key: keyof Permissions; label: string }[] = [
+    { key: "companies", label: "التحكم في ملف الشركات" },
+    { key: "linking", label: "التحكم في الربط بين الشركات" },
+    { key: "bankBalance", label: "التحكم في الرصيد البنكي" },
+    { key: "sponsorshipTransfer", label: "تعديل وإضافة نقل الكفالة" },
+    { key: "visaIssuance", label: "تعديل وإضافة إصدار تأشيرة" },
+    { key: "annualRenewal", label: "تعديل وإضافة التجديد سنوي" },
+  ]
 
   return (
     <Dialog
@@ -98,7 +206,7 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
             />
           </div>
 
-          {/* الإيميل: قابل للتعديل فقط في وضع الإضافة */}
+          {/* البريد الإلكتروني */}
           {isEditMode ? (
             <div>
               <Label text="البريد الإلكتروني" />
@@ -132,16 +240,43 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
             </div>
           )}
 
-          {/* الصلاحية */}
+          {/* الدور */}
           <div>
-            <Label text="الصلاحية" required />
+            <Label text="الدور" required />
             <Select
-              value={isAdmin ? "مدير النظام" : "مدخل بيانات"}
-              onChange={(val) => setIsAdmin(val === "مدير النظام")}
-              options={["مدخل بيانات", "مدير النظام"]}
-              placeholder={"اختر الصلاحية"}
+              value={role}
+              onChange={(val) => setRole(val as Role)}
+              options={["مدير", "مشرف", "مخصص"]}
+              placeholder="اختر الدور"
             />
           </div>
+
+          {/* الصلاحيات التفصيلية – تظهر فقط عند اختيار "مخصص" */}
+          {role === "مخصص" && (
+            <div>
+              <Label text="الصلاحيات" required />
+              <div className="space-y-3">
+                {permissionFields.map((perm) => (
+                  <div key={perm.key} className="flex items-center gap-2">
+                    <span className="w-48 text-sm">{perm.label}</span>
+                    <div className="flex-1">
+                      <Select
+                        value={permissionToLabel(permissions[perm.key])}
+                        onChange={(val) =>
+                          setPermissions((prev) => ({
+                            ...prev,
+                            [perm.key]: labelToPermission(val),
+                          }))
+                        }
+                        options={["ممنوع", "مشاهدة", "تعديل"]}
+                        placeholder="اختر"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </Dialog>

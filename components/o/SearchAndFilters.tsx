@@ -1,8 +1,24 @@
 "use client"
 
+import { useMemo } from "react"
 import { Search, ArrowUpDown, Eye, EyeOff } from "lucide-react"
 
 const SERVICE_TYPES = ["نقل كفالة", "إصدار تأشيرة", "تجديد سنوي"]
+
+// ربط كل نوع خدمة بمفتاح الصلاحية المناسب
+const SERVICE_PERMISSION_MAP: Record<string, string> = {
+  "نقل كفالة": "sponsorshipTransfer",
+  "إصدار تأشيرة": "visaIssuance",
+  "تجديد سنوي": "annualRenewal",
+}
+
+type PermissionKey =
+  | "companies"
+  | "linking"
+  | "bankBalance"
+  | "sponsorshipTransfer"
+  | "visaIssuance"
+  | "annualRenewal"
 
 type Props = {
   searchQuery: string
@@ -15,6 +31,7 @@ type Props = {
   onTabChange: (tab: string) => void
   showExpanded: boolean
   onToggleExpanded: () => void
+  permissions?: Record<PermissionKey, "none" | "view" | "edit"> | null
 }
 
 export default function SearchAndFilters({
@@ -28,7 +45,34 @@ export default function SearchAndFilters({
   onTabChange,
   showExpanded,
   onToggleExpanded,
+  permissions,
 }: Props) {
+  // تحديد التبويبات المسموحة بناءً على الصلاحيات
+  const allowedTabs = useMemo(() => {
+    if (!permissions) {
+      // لم تُمرر صلاحيات – نفترض أن المستخدم مدير أو النظام القديم (يعرض الكل)
+      return ["الكل", ...SERVICE_TYPES]
+    }
+
+    const visibleServices = SERVICE_TYPES.filter((service) => {
+      const permKey = SERVICE_PERMISSION_MAP[service] as PermissionKey
+      return permissions[permKey] && permissions[permKey] !== "none"
+    })
+
+    if (visibleServices.length === 0) {
+      // لا يملك أي صلاحية على الخدمات الثلاث – لا نعرض "الكل" ولا أي تبويب خدمة
+      return []
+    }
+
+    if (visibleServices.length < SERVICE_TYPES.length) {
+      // يملك بعض الصلاحيات وليس كلها – نعرض الخدمات التي يملكها فقط (بدون "الكل")
+      return visibleServices
+    }
+
+    // يملك الصلاحيات الثلاثة جميعها – نعرض "الكل" + الخدمات
+    return ["الكل", ...SERVICE_TYPES]
+  }, [permissions])
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -67,7 +111,7 @@ export default function SearchAndFilters({
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-2">
-          {["الكل", ...SERVICE_TYPES].map((tab) => (
+          {allowedTabs.map((tab) => (
             <button
               key={tab}
               onClick={() => onTabChange(tab)}

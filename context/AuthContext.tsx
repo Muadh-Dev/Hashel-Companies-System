@@ -10,11 +10,21 @@ import React, {
 import { supabase } from "@/lib/supabase/supabaseSsrClient"
 import type { Session, AuthChangeEvent } from "@supabase/supabase-js"
 
+// تحديث نوع المستخدم ليشمل الدور والصلاحيات
 export type AuthUser = {
   id: string
   name: string
   email: string
   is_admin: boolean
+  role?: "مدير" | "مشرف" | "مخصص"
+  permissions?: {
+    companies: "none" | "view" | "edit"
+    linking: "none" | "view" | "edit"
+    bankBalance: "none" | "view" | "edit"
+    sponsorshipTransfer: "none" | "view" | "edit"
+    visaIssuance: "none" | "view" | "edit"
+    annualRenewal: "none" | "view" | "edit"
+  }
 }
 
 interface AuthContextType {
@@ -35,35 +45,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // جلب الملف الشخصي من جدول Users
+  // جلب الملف الشخصي من جدول Users مع الصلاحيات الجديدة
   const fetchProfile = useCallback(async (userId: string, email?: string) => {
     try {
+      // البحث بواسطة auth_id
       const { data: byAuth } = await supabase
         .from("Users")
-        .select("id, name, email, is_admin")
+        .select("id, name, email, is_admin, role, permissions")
         .eq("auth_id", userId)
         .maybeSingle()
 
       if (byAuth) {
-        setUser(byAuth as AuthUser)
+        setUser({
+          id: byAuth.id,
+          name: byAuth.name,
+          email: byAuth.email,
+          is_admin: byAuth.is_admin,
+          role: byAuth.role,
+          permissions: byAuth.permissions,
+        })
         setError(null)
         return
       }
 
+      // إذا لم يوجد بـ auth_id، نبحث بالإيميل
       if (email) {
         const { data: byEmail } = await supabase
           .from("Users")
-          .select("id, name, email, is_admin, auth_id")
+          .select("id, name, email, is_admin, role, permissions, auth_id")
           .eq("email", email)
           .maybeSingle()
 
         if (byEmail) {
+          // البريد مستعمل من قبل جلسة أخرى
           if (byEmail.auth_id) {
             setUser(null)
             setError("هذا الحساب مرتبط بجلسة أخرى.")
             return
           }
 
+          // ربط auth_id بهذا المستخدم
           const { error: updateError } = await supabase
             .from("Users")
             .update({ auth_id: userId })
@@ -76,12 +97,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name: byEmail.name,
             email: byEmail.email,
             is_admin: byEmail.is_admin,
+            role: byEmail.role,
+            permissions: byEmail.permissions,
           })
           setError(null)
           return
         }
       }
 
+      // لا يوجد مستخدم مطابق
       setUser(null)
       setError("لم يتم منحك صلاحية بعد. يرجى التواصل مع مدير النظام.")
     } catch (err: any) {
@@ -158,7 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchProfile])
 
-  // 🚀 تسجيل الدخول عبر Google
+  // تسجيل الدخول عبر Google
   const signInWithGoogle = useCallback(async () => {
     const origin = window.location.origin
       .replace(/:80$/, "")

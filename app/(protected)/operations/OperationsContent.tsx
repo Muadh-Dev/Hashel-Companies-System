@@ -15,6 +15,7 @@ import { addPaymentToTransaction, deleteTransaction } from "./upload"
 import DeleteConfirmModal from "@/components/DeleteConfirmModal"
 import { toast } from "sonner"
 import AddPaymentModal from "@/components/o/AddPaymentDialog"
+import { useAuth } from "@/context/AuthContext"
 
 export default function OperationsContent() {
   const searchParams = useSearchParams()
@@ -30,7 +31,8 @@ export default function OperationsContent() {
     useState<Transaction | null>(null) // 🆕
   const [isDeleting, setIsDeleting] = useState(false)
   const [addPaymentItem, setAddPaymentItem] = useState<Transaction | null>(null)
-
+  // داخل المكون:
+  const { user } = useAuth()
   const {
     transactions,
     loading,
@@ -184,6 +186,7 @@ export default function OperationsContent() {
           onTabChange={setActiveTab}
           showExpanded={showExpanded}
           onToggleExpanded={() => setShowExpanded(!showExpanded)}
+          permissions={user?.permissions}
         />
 
         <div className="relative min-h-100">

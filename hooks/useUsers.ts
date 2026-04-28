@@ -4,11 +4,26 @@ import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/lib/supabase/supabaseSsrClient"
 import { toast } from "sonner"
 
+// الأنواع المضافة للصلاحيات
+type PermissionLevel = "none" | "view" | "edit"
+
+interface Permissions {
+  companies: PermissionLevel
+  linking: PermissionLevel
+  bankBalance: PermissionLevel
+  sponsorshipTransfer: PermissionLevel
+  visaIssuance: PermissionLevel
+  annualRenewal: PermissionLevel
+}
+
+// النوع بعد التعديل
 export type User = {
   id: string
   name: string
   email: string
   is_admin: boolean
+  role: "مدير" | "مشرف" | "مخصص" // حقل اختياري
+  permissions: Permissions // حقل اختياري
   created_at: string
 }
 
@@ -18,9 +33,8 @@ export function useUsers() {
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
-    // 🟢 استخدام الاسم الصحيح للجدول (كما أنشأته في SQL)
     const { data, error } = await supabase
-      .from("Users") // أو "users" حسب ما يظهر في Supabase
+      .from("Users")
       .select("*")
       .order("created_at", { ascending: false })
 

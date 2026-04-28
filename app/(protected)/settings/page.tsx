@@ -48,6 +48,14 @@ export default function MyPage() {
     setPrice(key, numValue)
   }
 
+  const hasPermission = (key: string): boolean => {
+    if (!user?.permissions) {
+      // إذا لم تكن هناك صلاحيات محددة، نعتمد على is_admin القديم للتوافق
+      return user?.is_admin === true
+    }
+    return user.permissions[key as keyof typeof user.permissions] !== "none"
+  }
+
   return (
     // إضافة dir="rtl" لدعم الاتجاه العربي بشكل كامل
     <div dir="rtl" className="space-y-6 p-6 font-sans md:p-10">
@@ -84,9 +92,8 @@ export default function MyPage() {
             <a
               href="/users"
               onClick={(e) => {
-                // إذا لم يكن المستخدم مديراً
-                if (!user?.is_admin) {
-                  e.preventDefault() // منع الرابط من الانتقال لصفحة /users
+                if (user?.role !== "مدير") {
+                  e.preventDefault()
                   toast.warning("لا توجد لديك صلاحية للدخول!", {
                     position: "top-center",
                   })
@@ -101,92 +108,105 @@ export default function MyPage() {
         </div>
 
         {/* ---------------- بطاقة تصدير جدول المعاملات ---------------- */}
-        <div className="group relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all hover:border-blue-500/30 hover:shadow-md sm:flex-row sm:items-center">
-          <div className="absolute -top-6 -left-6 h-32 w-32 rounded-full bg-blue-500/5 transition-transform duration-500 group-hover:scale-150" />
+        {hasPermission("sponsorshipTransfer") &&
+          hasPermission("visaIssuance") &&
+          hasPermission("annualRenewal") && (
+            <div className="group relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all hover:border-blue-500/30 hover:shadow-md sm:flex-row sm:items-center">
+              <div className="absolute -top-6 -left-6 h-32 w-32 rounded-full bg-blue-500/5 transition-transform duration-500 group-hover:scale-150" />
 
-          <div className="relative z-10 flex items-center gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-500 dark:bg-blue-500/10">
-              <Database className="h-7 w-7" />
+              <div className="relative z-10 flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-500 dark:bg-blue-500/10">
+                  <Database className="h-7 w-7" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-foreground">
+                    جدول المعاملات
+                  </h2>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    تصدير كافة المعاملات إلى ملف Excel
+                  </p>
+                </div>
+              </div>
+
+              <div className="relative z-10 flex justify-end">
+                <ExportToExcel />
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-foreground">
-                جدول المعاملات
-              </h2>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                تصدير كافة المعاملات إلى ملف Excel
-              </p>
-            </div>
-          </div>
-
-          <div className="relative z-10 flex justify-end">
-            <ExportToExcel />
-          </div>
-        </div>
-
+          )}
         {/* ---------------- بطاقة تصدير الشركات المرتبطة ---------------- */}
-        <div className="group relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all hover:border-orange-500/30 hover:shadow-md sm:flex-row sm:items-center">
-          <div className="absolute -top-6 -left-6 h-32 w-32 rounded-full bg-orange-500/5 transition-transform duration-500 group-hover:scale-150" />
+        {hasPermission("linking") && (
+          <div className="group relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all hover:border-orange-500/30 hover:shadow-md sm:flex-row sm:items-center">
+            <div className="absolute -top-6 -left-6 h-32 w-32 rounded-full bg-orange-500/5 transition-transform duration-500 group-hover:scale-150" />
 
-          <div className="relative z-10 flex items-center gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500 dark:bg-orange-500/10">
-              <FileSpreadsheet className="h-7 w-7" />
+            <div className="relative z-10 flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500 dark:bg-orange-500/10">
+                <FileSpreadsheet className="h-7 w-7" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">
+                  الشركات المرتبطة
+                </h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  استخراج بيانات الشركات المرتبطة
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-foreground">
-                الشركات المرتبطة
-              </h2>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                استخراج بيانات الشركات المرتبطة
-              </p>
+
+            <div className="relative z-10 flex justify-end">
+              <ExportCompaniesToExcel />
             </div>
           </div>
-
-          <div className="relative z-10 flex justify-end">
-            <ExportCompaniesToExcel />
-          </div>
-        </div>
+        )}
 
         {/* ---------------- بطاقة تصدير ملف الشركات ---------------- */}
+        {hasPermission("companies") && (
+          <div className="group relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all hover:border-emerald-500/30 hover:shadow-md sm:flex-row sm:items-center">
+            <div className="absolute -top-6 -left-6 h-32 w-32 rounded-full bg-emerald-500/5 transition-transform duration-500 group-hover:scale-150" />
+
+            <div className="relative z-10 flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10">
+                <Download className="h-7 w-7" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">
+                  ملف الشركات
+                </h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  تحميل السجل الكامل للشركات
+                </p>
+              </div>
+            </div>
+
+            <div className="relative z-10 flex justify-end">
+              <ExportCompaniesFullToExcel />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ---------------- بطاقة تصديرالرصيد البنكي ---------------- */}
+      {hasPermission("bankBalance") && (
         <div className="group relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all hover:border-emerald-500/30 hover:shadow-md sm:flex-row sm:items-center">
           <div className="absolute -top-6 -left-6 h-32 w-32 rounded-full bg-emerald-500/5 transition-transform duration-500 group-hover:scale-150" />
 
           <div className="relative z-10 flex items-center gap-4">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10">
-              <Download className="h-7 w-7" />
+              <Banknote className="h-7 w-7" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-foreground">ملف الشركات</h2>
+              <h2 className="text-lg font-bold text-foreground">
+                الرصيد البنكي
+              </h2>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                تحميل السجل الكامل للشركات
+                تحميل السجل الكامل للرصيد البنكي
               </p>
             </div>
           </div>
-
           <div className="relative z-10 flex justify-end">
-            <ExportCompaniesFullToExcel />
+            <ExportBankBalanceToExcel />
           </div>
         </div>
-      </div>
-
-      {/* ---------------- بطاقة تصديرالرصيد البنكي ---------------- */}
-      <div className="group relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all hover:border-emerald-500/30 hover:shadow-md sm:flex-row sm:items-center">
-        <div className="absolute -top-6 -left-6 h-32 w-32 rounded-full bg-emerald-500/5 transition-transform duration-500 group-hover:scale-150" />
-
-        <div className="relative z-10 flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10">
-            <Banknote className="h-7 w-7" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-foreground">الرصيد البنكي</h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              تحميل السجل الكامل للرصيد البنكي
-            </p>
-          </div>
-        </div>
-        <div className="relative z-10 flex justify-end">
-          <ExportBankBalanceToExcel />
-        </div>
-      </div>
+      )}
       {/* ---------------- بطاقة تعديل الأسعار المحدثة ---------------- */}
       <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all hover:border-blue-500/30 hover:shadow-md">
         {/* الزخرفة الخلفية لتناسب النمط العام */}
