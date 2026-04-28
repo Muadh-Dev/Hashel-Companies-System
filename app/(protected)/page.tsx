@@ -15,7 +15,6 @@ import {
 } from "lucide-react"
 import { useTransactions } from "@/hooks/useTransactions"
 import { useCompanies } from "@/hooks/useCompanies"
-import { createClient } from "@/lib/supabase/supabaseSsrClient"
 import { useAuth } from "@/context/AuthContext"
 
 export default function EmployeeDashboard() {
