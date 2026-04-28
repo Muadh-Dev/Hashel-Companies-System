@@ -1,7 +1,7 @@
 // add.tsx
 "use client"
 
-import React, { useState, useEffect, useRef, useCallback } from "react"
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import {
   Briefcase,
   Building2,
@@ -21,9 +21,26 @@ import { supabase } from "@/lib/supabase/supabaseSsrClient"
 // 1. Constants & Types
 // ==========================================
 const SERVICE_TYPES = ["نقل كفالة", "إصدار تأشيرة", "تجديد سنوي"] as const
-const COMPANIES = [{ name: "هاشل اليامي", id: "7051022502" }]
-
 type ServiceType = (typeof SERVICE_TYPES)[number]
+
+// داخل المكون:
+import { useAuth } from "@/context/AuthContext"
+const { user } = useAuth()
+
+// تصفية الخدمات المتاحة دون المساس بـ SERVICE_TYPES
+const availableServiceTypes = useMemo(() => {
+  if (!user?.permissions) return SERVICE_TYPES
+
+  const perms = user.permissions // 👈 هنا يصبح النوع مؤكداً غير فارغ
+
+  const permissionMap: Record<string, keyof typeof perms> = {
+    "نقل كفالة": "sponsorshipTransfer",
+    "إصدار تأشيرة": "visaIssuance",
+    "تجديد سنوي": "annualRenewal",
+  }
+
+  return SERVICE_TYPES.filter((type) => perms[permissionMap[type]] !== "none")
+}, [user?.permissions])
 
 // إنشاء نوع للبيانات بدون الحقول المحسوبة
 type TransactionInput = Omit<Transaction, "id" | "created_at" | "companies">
@@ -342,7 +359,7 @@ export function TransactionModal({
 
               <FormField label="نوع الإجراء" required>
                 <Select
-                  options={[...SERVICE_TYPES]}
+                  options={[...availableServiceTypes]}
                   value={data.service_type}
                   onChange={(v) => handleInputChange("service_type", v)}
                   placeholder="اختر الإجراء"

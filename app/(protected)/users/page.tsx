@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { MoreHorizontal, Edit, Trash } from "lucide-react"
+import { MoreHorizontal, Edit, Trash, ShieldAlert } from "lucide-react"
 import { useUsers, type User } from "@/hooks/useUsers"
+import { useAuth } from "@/context/AuthContext"
 import { AddUsersModal } from "./add"
 import { deleteUser } from "./uploadUsers"
-import DeleteConfirmModal from "@/components/DeleteConfirmModal" // تأكد من مسار المكون
+import DeleteConfirmModal from "@/components/DeleteConfirmModal"
 import { toast } from "sonner"
 import {
   DropdownMenu,
@@ -14,16 +15,48 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
 
+// دالة مساعدة لتحويل الصلاحيات إلى نص مفهوم للعرض
+function formatPermissions(user: User): string {
+  if (!user.permissions) return ""
+  const map: Record<string, string> = {
+    companies: "ملف الشركات",
+    linking: "الربط بين الشركات",
+    bankBalance: "الرصيد البنكي",
+    sponsorshipTransfer: "نقل الكفالة",
+    visaIssuance: "إصدار تأشيرة",
+    annualRenewal: "التجديد سنوي",
+  }
+  const items = Object.entries(user.permissions)
+    .filter(([, v]) => v !== "none")
+    .map(([k, v]) => `${map[k] || k} (${v === "edit" ? "تعديل" : "مشاهدة"})`)
+  return items.join("، ")
+}
+
 export default function UsersPage() {
+  const { user: currentUser } = useAuth()
   const { users, loading, addUserLocal, updateUserLocal, removeUserLocal } =
     useUsers()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
 
-  // حالات الحذف
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // حماية الصفحة: المدير فقط
+  if (currentUser?.role !== "مدير") {
+    return (
+      <div className="flex h-64 items-center justify-center p-8" dir="rtl">
+        <div className="space-y-3 rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+          <ShieldAlert className="mx-auto h-10 w-10 text-rose-500" />
+          <p className="text-lg font-bold text-foreground">غير مصرح</p>
+          <p className="text-sm text-muted-foreground">
+            هذه الصفحة مخصصة لمدير النظام فقط.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const handleAddNew = () => {
     setEditingUser(null)
@@ -50,12 +83,10 @@ export default function UsersPage() {
     setEditingUser(null)
   }
 
-  // فتح مودال تأكيد الحذف
   const handleDeleteRequest = (user: User) => {
     setDeleteTarget(user)
   }
 
-  // تنفيذ الحذف بعد التأكيد
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return
     setIsDeleting(true)
@@ -63,7 +94,7 @@ export default function UsersPage() {
       await deleteUser(deleteTarget.id)
       removeUserLocal(deleteTarget.id)
       toast.success("تم حذف المستخدم بنجاح")
-      setDeleteTarget(null) // إغلاق المودال
+      setDeleteTarget(null)
     } catch (error) {
       toast.error("فشل في حذف المستخدم")
     } finally {
@@ -94,7 +125,7 @@ export default function UsersPage() {
               <tr>
                 <th className="p-4 text-right font-bold">الاسم</th>
                 <th className="p-4 text-right font-bold">الإيميل</th>
-                <th className="p-4 text-right font-bold">الصلاحية</th>
+                <th className="p-4 text-right font-bold">الدور والصلاحيات</th>
                 <th className="p-4 text-right font-bold">تاريخ الإنشاء</th>
                 <th className="p-4 text-center font-bold">الإجراءات</th>
               </tr>
@@ -105,15 +136,31 @@ export default function UsersPage() {
                   <td className="p-4 font-medium">{user.name}</td>
                   <td className="p-4">{user.email}</td>
                   <td className="p-4">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
-                        user.is_admin
-                          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                          : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                      }`}
-                    >
-                      {user.is_admin ? "مدير النظام" : "مدخل بيانات"}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span
+                        className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${
+                          user.role === "مدير"
+                            ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                            : user.role === "مشرف"
+                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                              : "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400"
+                        }`}
+                      >
+                        {user.role === "مدير"
+                          ? "مدير"
+                          : user.role === "مشرف"
+                            ? "مشرف"
+                            : "مخصص"}
+                      </span>
+                      {user.role === "مخصص" && user.permissions && (
+                        <span
+                          className="line-clamp-1 text-xs text-muted-foreground"
+                          title={formatPermissions(user)}
+                        >
+                          {formatPermissions(user) || "بدون صلاحيات"}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="p-4 text-sm text-muted-foreground">
                     {new Date(user.created_at).toLocaleDateString("ar-SA")}
@@ -158,7 +205,6 @@ export default function UsersPage() {
         initialData={editingUser}
       />
 
-      {/* مودال تأكيد الحذف */}
       <DeleteConfirmModal
         isOpen={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}

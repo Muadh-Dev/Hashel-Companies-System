@@ -1,11 +1,10 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useEffect } from "react"
 import { Search, ArrowUpDown, Eye, EyeOff } from "lucide-react"
 
 const SERVICE_TYPES = ["نقل كفالة", "إصدار تأشيرة", "تجديد سنوي"]
 
-// ربط كل نوع خدمة بمفتاح الصلاحية المناسب
 const SERVICE_PERMISSION_MAP: Record<string, string> = {
   "نقل كفالة": "sponsorshipTransfer",
   "إصدار تأشيرة": "visaIssuance",
@@ -50,7 +49,6 @@ export default function SearchAndFilters({
   // تحديد التبويبات المسموحة بناءً على الصلاحيات
   const allowedTabs = useMemo(() => {
     if (!permissions) {
-      // لم تُمرر صلاحيات – نفترض أن المستخدم مدير أو النظام القديم (يعرض الكل)
       return ["الكل", ...SERVICE_TYPES]
     }
 
@@ -59,19 +57,17 @@ export default function SearchAndFilters({
       return permissions[permKey] && permissions[permKey] !== "none"
     })
 
-    if (visibleServices.length === 0) {
-      // لا يملك أي صلاحية على الخدمات الثلاث – لا نعرض "الكل" ولا أي تبويب خدمة
-      return []
-    }
-
-    if (visibleServices.length < SERVICE_TYPES.length) {
-      // يملك بعض الصلاحيات وليس كلها – نعرض الخدمات التي يملكها فقط (بدون "الكل")
-      return visibleServices
-    }
-
-    // يملك الصلاحيات الثلاثة جميعها – نعرض "الكل" + الخدمات
+    if (visibleServices.length === 0) return []
+    if (visibleServices.length < SERVICE_TYPES.length) return visibleServices
     return ["الكل", ...SERVICE_TYPES]
   }, [permissions])
+
+  // إصلاح تلقائي للتبويب النشط إذا أصبح غير موجود (مثلاً "الكل")
+  useEffect(() => {
+    if (allowedTabs.length > 0 && !allowedTabs.includes(activeTab)) {
+      onTabChange(allowedTabs[0])
+    }
+  }, [allowedTabs, activeTab, onTabChange])
 
   return (
     <div className="space-y-4">
