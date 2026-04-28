@@ -4,3 +4,14 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[[redirects]]
+  from = "/auth/callback"
+  to = "/auth/callback"
+  status = 200
+  force = true
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Forwarded-Proto = "https"

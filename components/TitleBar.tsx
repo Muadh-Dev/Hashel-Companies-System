@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Minus, X, LayoutGrid, Maximize2, Minimize2 } from "lucide-react"
-import Image from "next/image"
 
 export default function TitleBar() {
   const [isMaximized, setIsMaximized] = useState(false)
@@ -85,7 +84,7 @@ export default function TitleBar() {
           <div className="absolute inset-0 rounded-lg bg-linear-to-br from-blue-500/5 to-transparent opacity-0 transition-opacity duration-300 group-hover/logo:opacity-100 dark:from-blue-400/5" />
 
           <div className="relative flex h-7 w-7 items-center justify-center rounded-lg border border-blue-100/50 bg-primary shadow-sm transition-all duration-300 group-hover/logo:scale-105 group-hover/logo:border-blue-200 group-hover/logo:shadow-md dark:border-blue-900/30 dark:from-blue-950/50 dark:to-slate-900 dark:group-hover/logo:border-blue-800">
-            <Image
+            <img
               src="/HashelSMWaiteLogo.png"
               alt={"logo"}
               width={20}

@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import Image from "next/image"
 import {
   Building2,
   CreditCard,
@@ -95,9 +94,8 @@ export default function AppSidebar({
             {(!isCollapsed || isMobileOpen) && (
               <div className="flex animate-in items-center gap-3 overflow-hidden duration-300 fade-in slide-in-from-right-4">
                 <div className="flex aspect-square size-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-blue-600 to-indigo-700 text-white">
-                  <Image
+                  <img
                     src="/HashelSMWaiteLogo.png"
-                    className="size-5"
                     width={30}
                     height={30}
                     alt="Logo"
