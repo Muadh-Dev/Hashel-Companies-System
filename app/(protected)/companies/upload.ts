@@ -34,19 +34,48 @@ function calculateTotalCosts(data: {
 }
 
 export async function addCompany(data: CompanyInput): Promise<Company> {
+  // 1. التحقق من البيانات الأساسية
   if (!data.unified_number?.trim()) throw new Error("الرقم الموحد مطلوب")
-  if (!data.company_owner?.trim()) throw new Error("اسم مالك الشركة مطلوب")
 
+  // 2. حساب التكاليف يدوياً قبل الإرسال
   const total_costs = calculateTotalCosts(data)
 
+  // 3. بناء الـ Payload بدقة (هنا الحل)
+  // قمنا باستبعاد id, created_at, و employees_count تماماً
+  const payload = {
+    unified_number: data.unified_number,
+    establishment_number: data.establishment_number,
+    social_insurance_number: data.social_insurance_number,
+    company_owner: data.company_owner,
+    entity_type: data.entity_type,
+    crNumber: data.crNumber ? Number(data.crNumber) : null, // تحويل لرقم
+    cr_expiry_date: data.cr_expiry_date || null,
+
+    // تحويل كل الحقول المالية إلى أرقام لـتجنب خطأ 400
+    government_fees: Number(data.government_fees || 0),
+    commercial_register_fees: Number(data.commercial_register_fees || 0),
+    qiwa: Number(data.qiwa || 0),
+    muqeem: Number(data.muqeem || 0),
+    newspaper_price: Number(data.newspaper_price || 0),
+    exemption_amount: Number(data.exemption_amount || 0),
+    total_costs: Number(total_costs || 0),
+
+    // إذا كنت لا ترسل هذه الحقول حالياً، نضعها null أو 0
+    transfers_count: 0,
+    visas_count: 0,
+  }
+
+  // 4. تنفيذ الطلب
   const { data: company, error } = await supabase
     .from("companies")
-    .insert([{ ...data, total_costs }])
+    .insert([payload]) // إرسال المصفوفة التي تحتوي الكائن النظيف
     .select("*")
     .single()
 
-  if (error) throw error
-  if (!company) throw new Error("فشل إضافة الشركة")
+  if (error) {
+    console.error("Error details:", error.message, error.details)
+    throw new Error(error.message)
+  }
 
   return company
 }

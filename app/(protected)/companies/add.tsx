@@ -18,7 +18,7 @@ import { Company } from "@/hooks/useCompanies"
 import { CompanyInput, addCompany, updateCompany } from "./upload"
 import { getPrice } from "@/lib/defalutValues"
 
-const ENTITY_TYPES = ["مؤسسة فردية", "شركة ذت مسؤولية محدودة"] as const
+const ENTITY_TYPES = ["مؤسسة فردية", "شركة ذات مسؤولية محدودة"] as const
 
 const getDefaultData = (): CompanyInput => ({
   unified_number: "",
