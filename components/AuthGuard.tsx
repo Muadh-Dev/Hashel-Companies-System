@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { session, loading, error } = useAuth()
+  const { session, loading, error, signOut } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -31,6 +31,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           className="rounded bg-blue-500 px-4 py-2 text-white"
         >
           إعادة المحاولة
+        </button>
+        <button
+          onClick={signOut}
+          className="rounded bg-green-500 px-4 py-2 text-white"
+        >
+          تسجيل الخروج
         </button>
       </div>
     )

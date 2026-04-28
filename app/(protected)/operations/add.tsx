@@ -15,6 +15,7 @@ import {
 import { addTransaction, updateTransaction } from "./upload" // 🆕 استيراد updateTransaction
 import { toast } from "sonner"
 import { Transaction } from "@/hooks/useTransactions"
+import { supabase } from "@/lib/supabase/supabaseSsrClient"
 
 // ==========================================
 // 1. Constants & Types
@@ -59,6 +60,24 @@ interface TransactionModalProps {
   onSave: (transaction: Transaction) => void
   activeTab: string
   initialData?: Transaction | null // 🆕 بيانات التعديل
+}
+
+const searchCompanies = async (query: string) => {
+  const { data, error } = await supabase
+    .from("companies")
+    .select("unified_number") // حقول خفيفة
+    .ilike("unified_number", `%${query}%`) // بحث بالرقم الموحد
+    .limit(20)
+
+  if (error) {
+    console.error(error)
+    return []
+  }
+
+  return (data || []).map((c: any) => ({
+    id: c.unified_number,
+    name: c.name || c.unified_number, // name إن لم يوجد استخدم الرقم
+  }))
 }
 
 export function TransactionModal({
@@ -304,12 +323,12 @@ export function TransactionModal({
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
               <FormField label="الشركة / الكفيل" required>
                 <SearchableSelect
-                  options={COMPANIES}
                   value={data.unified_number_of_company}
                   onChange={(v) =>
                     handleInputChange("unified_number_of_company", v)
                   }
                   placeholder="ابحث بالاسم أو الرقم الموحد"
+                  onSearch={searchCompanies}
                 />
               </FormField>
 
@@ -583,25 +602,53 @@ const Select = ({
 )
 
 const SearchableSelect = ({
-  options,
-  value, // الرقم الموحد (ID) المُختار
+  options, // للتوافق مع الاستخدامات القديمة (اختياري)
+  value,
   onChange,
   placeholder,
+  onSearch, // 🆕 دالة البحث غير المتزامنة
 }: {
-  options: { name: string; id: string }[]
+  options?: { name: string; id: string }[]
   value: string
   onChange: (v: string) => void
   placeholder: string
+  onSearch?: (query: string) => Promise<{ name: string; id: string }[]>
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState("")
+  const [results, setResults] = useState<{ name: string; id: string }[]>([])
+  const [isSearching, setIsSearching] = useState(false)
 
-  const filtered = options.filter(
-    (o) => o.name.includes(search) || o.id.includes(search)
-  )
+  // عند تغيير نص البحث
+  useEffect(() => {
+    if (!search.trim() || !onSearch) {
+      setResults([])
+      return
+    }
 
-  // العثور على الشركة المختارة بناءً على المعرف
-  const selectedOption = options.find((o) => o.id === value)
+    const timer = setTimeout(async () => {
+      setIsSearching(true)
+      try {
+        const data = await onSearch(search)
+        setResults(data)
+      } catch (err) {
+        console.error(err)
+        setResults([])
+      } finally {
+        setIsSearching(false)
+      }
+    }, 300) // تأخير 300ms لتقليل الطلبات
+
+    return () => clearTimeout(timer)
+  }, [search, onSearch])
+
+  // استخدام options الثابتة كخيار احتياطي
+  const displayResults = onSearch
+    ? results
+    : (options || []).filter((o) => o.id.includes(search))
+
+  // العثور على الشركة المختارة (نبحث في options أو نخزن الاسم محلياً)
+  const selectedOption = (options || []).find((o) => o.id === value)
 
   return (
     <div className="relative">
@@ -614,7 +661,7 @@ const SearchableSelect = ({
         >
           {selectedOption
             ? `${selectedOption.name} (${selectedOption.id})`
-            : placeholder}
+            : value || placeholder}
         </span>
         <ChevronDown className="h-5 w-5 text-muted-foreground" />
       </div>
@@ -628,32 +675,43 @@ const SearchableSelect = ({
           <div className="absolute z-50 mt-2 w-full space-y-2 rounded-xl border border-border bg-card p-2 shadow-xl">
             <input
               className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-              placeholder="ابحث..."
+              placeholder="ابحث بالرقم الموحد..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               autoFocus
             />
+
             <div className="max-h-40 overflow-y-auto">
-              {filtered.length > 0 ? (
-                filtered.map((opt) => (
+              {isSearching ? (
+                <div className="p-2 text-center text-xs text-muted-foreground">
+                  جاري البحث...
+                </div>
+              ) : displayResults.length > 0 ? (
+                displayResults.map((opt) => (
                   <div
                     key={opt.id}
                     onClick={() => {
-                      onChange(opt.id) // ✅ نرسل المعرف فقط
+                      onChange(opt.id)
                       setIsOpen(false)
                       setSearch("")
                     }}
                     className="cursor-pointer rounded-lg p-2 transition-colors hover:bg-secondary"
                   >
-                    <div className="text-sm font-bold">{opt.name}</div>
+                    <div className="text-sm font-bold">
+                      {opt.name || opt.id}
+                    </div>
                     <div className="text-[10px] text-muted-foreground">
                       {opt.id}
                     </div>
                   </div>
                 ))
-              ) : (
+              ) : search.trim() ? (
                 <div className="p-2 text-center text-xs text-muted-foreground">
                   لا توجد نتائج
+                </div>
+              ) : (
+                <div className="p-2 text-center text-xs text-muted-foreground">
+                  اكتب للبحث...
                 </div>
               )}
             </div>
