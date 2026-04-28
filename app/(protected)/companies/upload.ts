@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/supabaseSsrClient"
 import { Company } from "@/hooks/useCompanies"
+import { toast } from "sonner"
 
 export type CompanyInput = {
   unified_number: string
@@ -132,6 +133,17 @@ export async function updateCompany(
 
 export async function deleteCompany(id: string): Promise<void> {
   if (!id) throw new Error("معرف الشركة مطلوب")
+
   const { error } = await supabase.from("companies").delete().eq("id", id)
-  if (error) throw error
+
+  if (error) {
+    // Code 23503 = foreign key violation (عنده عمال مرتبطين)
+    if (error.code === "23503") {
+      toast.error(
+        "لا يمكن حذف الشركة لأنها تحتوي على عمال مرتبطين. قم بنقل العمال أو حذفهم أولاً.",
+        { position: "bottom-left" }
+      )
+    }
+    throw error
+  }
 }
