@@ -139,7 +139,7 @@ export default function CompanyRow({
 
             <DropdownMenuItem
               className="cursor-pointer text-red-600 focus:text-red-600"
-              onClick={() => onEditRequest(item)}
+              onClick={() => onDeleteRequest(item)}
             >
               <Trash className="mr-2 h-4 w-4" /> حذف
             </DropdownMenuItem>
