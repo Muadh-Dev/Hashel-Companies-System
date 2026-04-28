@@ -1,51 +1,41 @@
 "use client"
 
-import { Suspense, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase/supabaseSsrClient"
 
-// مكوّن داخلي يقوم بقراءة الكود وإتمام تسجيل الدخول
-function AuthCallbackHandler() {
+export default function AuthCallbackPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   useEffect(() => {
-    const code = searchParams.get("code")
-    if (!code) {
-      router.replace("/login?error=no_code")
-      return
-    }
+    // الاستماع لأي تغير في حالة المصادقة
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        // تم تسجيل الدخول بنجاح – انتقال إلى الصفحة المحمية
+        router.replace("/")
+      } else if (event === "SIGNED_OUT") {
+        // خروج غير متوقع
+        router.replace("/login")
+      }
+    })
 
-    supabase.auth
-      .exchangeCodeForSession(code)
-      .then(({ error }) => {
-        if (error) {
-          router.replace(`/login?error=${encodeURIComponent(error.message)}`)
-        } else {
-          router.replace("/dashboard")
-        }
-      })
-      .catch(() => router.replace("/login?error=unknown"))
-  }, [router, searchParams])
+    // في حالة كانت الجلسة موجودة مسبقًا (مثلاً إعادة تحميل الصفحة بعد الكول باك)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.replace("/")
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [router])
 
   return (
     <div className="flex h-screen items-center justify-center text-gray-600">
-      جارٍ تسجيل الدخول...
+      إتمام تسجيل الدخول...
     </div>
-  )
-}
-
-// المكوّن الرئيسي يلف بالـ Suspense
-export default function AuthCallbackPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex h-screen items-center justify-center text-gray-600">
-          جارٍ التحقق...
-        </div>
-      }
-    >
-      <AuthCallbackHandler />
-    </Suspense>
   )
 }
