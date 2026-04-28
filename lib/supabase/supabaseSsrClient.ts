@@ -1,3 +1,5 @@
+"use client" // ⬅️ هذا السطر هو الحل
+
 import { createBrowserClient } from "@supabase/ssr"
 
 export function createClient() {

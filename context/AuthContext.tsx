@@ -7,7 +7,7 @@ import React, {
   useState,
   useCallback,
 } from "react"
-import { supabase } from "@/lib/supabase/supabaseSsrClient"
+import { supabase } from "@/lib/supabase/supabaseSsrClient" // ⚠️ تأكد أنه عميل متصفح (createBrowserClient)
 import { useRouter } from "next/navigation"
 
 export type AuthUser = {
@@ -104,49 +104,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const retryAuthorization = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-    if (session?.user) {
-      await fetchProfile(session.user.id, session.user.email)
-    } else {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (session?.user) {
+        await fetchProfile(session.user.id, session.user.email)
+      } else {
+        setUser(null)
+        setError(null)
+      }
+    } catch (err: any) {
+      console.error("❌ خطأ في retryAuthorization:", err)
       setUser(null)
-      setError(null)
+      setError("تعذرت إعادة المحاولة. تحقق من اتصالك.")
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [fetchProfile])
 
   // تهيئة الجلسة عند التحميل
   useEffect(() => {
     const initSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (session?.user) {
-        await fetchProfile(session.user.id)
-      } else {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+        if (session?.user) {
+          await fetchProfile(session.user.id, session.user.email)
+        } else {
+          setUser(null)
+          setError(null)
+        }
+      } catch (err: any) {
+        console.error("❌ فشل تهيئة الجلسة:", err)
         setUser(null)
-        setError(null)
+        setError("حدث خطأ أثناء تهيئة الجلسة.")
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
+
     initSession()
 
     // الاستماع لتغيرات حالة المصادقة
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        // إعادة تعيين التحميل دفاعياً (لن يكون true عادة)
+        setLoading(false)
+
         if (event === "SIGNED_OUT") {
           setUser(null)
           setError(null)
-          setLoading(false)
           return
         }
 
-        if (session?.user) {
-          await fetchProfile(session.user.id)
-        } else {
+        try {
+          if (session?.user) {
+            await fetchProfile(session.user.id, session.user.email)
+          } else {
+            setUser(null)
+            setError(null)
+          }
+        } catch (err: any) {
+          console.error("❌ خطأ في مستمع المصادقة:", err)
           setUser(null)
-          setError(null)
+          setError("حدث خطأ غير متوقع.")
         }
       }
     )
@@ -158,7 +181,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // تسجيل الدخول بـ Google
   const signInWithGoogle = useCallback(async () => {
-    // ✅ نظّف الـ origin من أي port غير ضروري
     const origin = window.location.origin
       .replace(/:80$/, "")
       .replace(/:443$/, "")

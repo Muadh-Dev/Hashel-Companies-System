@@ -9,8 +9,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading, error, signOut, retryAuthorization } = useAuth()
   const router = useRouter()
 
-  // إعادة التوجيه إلى /login فقط إذا لم تكن هناك جلسة ولا خطأ
   useEffect(() => {
+    // لا توجه إلى login إلا إذا لم تكن هناك جلسة ولا خطأ
     if (!loading && !user && !error) {
       router.replace("/login")
     }
@@ -44,7 +44,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
               تسجيل الخروج
             </button>
             <button
-              onClick={retryAuthorization} // ⬅️ إعادة محاولة جلب الصلاحية
+              onClick={retryAuthorization}
               className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-6 py-2.5 font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             >
               <RefreshCw className="h-4 w-4" />
@@ -61,6 +61,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>
   }
 
-  // حالة احتياطية
+  // حالة احتياطية (يجب ألا تصل هنا في الوضع الطبيعي)
   return null
 }
