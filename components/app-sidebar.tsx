@@ -14,11 +14,11 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  LogOut,
   LucideIcon,
   User,
 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
+import LogoutButton from "./LogoutConfirmModal"
 
 interface NavItem {
   id: number
@@ -44,7 +44,7 @@ export default function AppSidebar({
   const pathname = usePathname()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
 
   useEffect(() => {
     const handleResize = () => {
@@ -202,13 +202,7 @@ export default function AppSidebar({
                       {user?.name || "مستخدم"}
                     </span>
                   </div>
-                  <button
-                    onClick={signOut}
-                    className="mr-auto p-1.5 text-slate-400 transition-colors hover:text-red-500"
-                    title="تسجيل الخروج"
-                  >
-                    <LogOut className="size-4" />
-                  </button>
+                  <LogoutButton />
                 </>
               )}
             </div>

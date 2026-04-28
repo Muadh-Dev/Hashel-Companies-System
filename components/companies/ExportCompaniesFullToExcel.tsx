@@ -345,7 +345,7 @@ export default function ExportCompaniesFullToExcel() {
     <button
       onClick={handleExport}
       disabled={isExporting}
-      className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white shadow-md transition-colors hover:bg-blue-700 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-400"
+      className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-400"
     >
       {isExporting ? (
         <>
@@ -365,7 +365,7 @@ export default function ExportCompaniesFullToExcel() {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
             />
           </svg>
-          جاري تصدير الشركات...
+          جاري التصدير...
         </>
       ) : (
         <>
@@ -379,10 +379,10 @@ export default function ExportCompaniesFullToExcel() {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             />
           </svg>
-          تصدير الشركات إلى Excel
+          تصدير إلى Excel
         </>
       )}
     </button>

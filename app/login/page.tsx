@@ -69,8 +69,6 @@ export default function LoginPage() {
         </button>
 
         <p className="pt-4 text-[10px] text-slate-400 dark:text-slate-500">
-          جميع الحقوق محفوظة لنظام هاشل © {new Date().getFullYear()}
-          <br />
           وصول المصرح لهم فقط
         </p>
       </div>

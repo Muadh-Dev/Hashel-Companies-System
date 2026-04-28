@@ -18,6 +18,7 @@ import { getPrice, setPrice } from "@/lib/defalutValues"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
+import ExportBankBalanceToExcel from "@/components/bank/ExportBankBalanceToExcel"
 
 export default function MyPage() {
   const { user } = useAuth()
@@ -183,7 +184,7 @@ export default function MyPage() {
           </div>
         </div>
         <div className="relative z-10 flex justify-end">
-          <ExportCompaniesFullToExcel />
+          <ExportBankBalanceToExcel />
         </div>
       </div>
       {/* ---------------- بطاقة تعديل الأسعار المحدثة ---------------- */}

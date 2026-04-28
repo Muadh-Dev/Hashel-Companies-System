@@ -1,12 +1,17 @@
 "use client"
 
-import { AlertCircle, Trash2, X } from "lucide-react"
+import { AlertCircle } from "lucide-react"
 
 type Props = {
   isOpen: boolean
   onClose: () => void
   onConfirm: () => void
   isDeleting: boolean
+  // النصوص المخصصة (اختيارية)
+  title?: string
+  description?: string
+  confirmText?: string
+  loadingText?: string
 }
 
 export default function DeleteConfirmModal({
@@ -14,6 +19,11 @@ export default function DeleteConfirmModal({
   onClose,
   onConfirm,
   isDeleting,
+  // وضع القيم الافتراضية هنا
+  title = "تأكيد الحذف",
+  description = "هل أنت متأكد من رغبتك في حذف هذا الصف؟ هذه العملية لا يمكن التراجع عنها.",
+  confirmText = "نعم، احذف",
+  loadingText = "جاري الحذف...",
 }: Props) {
   if (!isOpen) return null
 
@@ -32,12 +42,14 @@ export default function DeleteConfirmModal({
             <AlertCircle className="h-8 w-8" />
           </div>
 
+          {/* العنوان المتغير */}
           <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">
-            تأكيد الحذف
+            {title}
           </h3>
+
+          {/* الوصف المتغير */}
           <p className="mb-6 text-slate-500 dark:text-slate-400">
-            هل أنت متأكد من رغبتك في حذف هذا الصف؟ هذه العملية لا يمكن التراجع
-            عنها.
+            {description}
           </p>
 
           <div className="flex w-full gap-3">
@@ -46,7 +58,8 @@ export default function DeleteConfirmModal({
               disabled={isDeleting}
               className="flex-1 rounded-xl bg-red-600 py-3 font-bold text-white transition-all hover:bg-red-700 active:scale-95 disabled:opacity-50"
             >
-              {isDeleting ? "جاري الحذف..." : "نعم، احذف"}
+              {/* نص الزر المتغير حسب حالة التحميل */}
+              {isDeleting ? loadingText : confirmText}
             </button>
             <button
               onClick={onClose}
