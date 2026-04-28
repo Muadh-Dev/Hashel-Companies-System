@@ -15,6 +15,8 @@ type Props = {
   showExpanded: boolean
   sortBy: "date" | "expiry"
   setSortBy: (val: "date" | "expiry") => void
+  onEditRequest: (item: Transaction) => void
+  onAddPaymentRequest: (item: Transaction) => void
 }
 
 export default function TransactionTable({
@@ -22,6 +24,8 @@ export default function TransactionTable({
   showExpanded,
   onDeleteRequest,
   setSortBy,
+  onEditRequest,
+  onAddPaymentRequest,
 }: Props) {
   return (
     <div className="overflow-x-auto rounded-[2rem] border border-slate-200 bg-white/50 shadow-xl backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/50">
@@ -141,6 +145,8 @@ export default function TransactionTable({
               item={item}
               showExpanded={showExpanded}
               onDeleteRequest={onDeleteRequest}
+              onEditRequest={onEditRequest}
+              onAddPaymentRequest={onAddPaymentRequest}
             />
           ))}
         </tbody>

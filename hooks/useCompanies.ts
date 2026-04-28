@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/lib/supabase/supabaseSsrClient"
+import { toast } from "sonner"
 
 export type Company = {
   id: string
@@ -22,30 +23,56 @@ export type Company = {
   exemption_amount: number
   newspaper_price: number
   created_at: string
+  employees_count: number
 }
 
 export function useCompanies() {
-  const [companies, setCompanies] = useState<Company[] | null>(null)
+  const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from("companies")
-        .select("*")
-        .order("created_at", { ascending: false })
+  const fetchCompanies = useCallback(async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from("companies")
+      .select("*")
+      .order("created_at", { ascending: false })
 
-      if (error) {
-        console.error("خطأ في جلب بيانات الشركات:", error)
-        setCompanies([]) // تعيين مصفوفة فارغة بدلاً من null لتجنب مشاكل العرض
-      } else {
-        setCompanies(data || [])
-      }
-      setLoading(false)
+    if (error) {
+      console.error("خطأ في جلب بيانات الشركات:", error)
+      toast.error("خطأ في جلب بيانات الشركات", { position: "top-center" })
+      setCompanies([])
+    } else {
+      setCompanies(data || [])
     }
-    fetchData()
+    setLoading(false)
   }, [])
 
-  return { companies, loading }
+  useEffect(() => {
+    fetchCompanies()
+  }, [fetchCompanies])
+
+  const addCompanyLocal = useCallback((newCompany: Company) => {
+    setCompanies((prev) => [newCompany, ...prev])
+  }, [])
+
+  const updateCompanyLocal = useCallback((updatedCompany: Company) => {
+    setCompanies((prev) =>
+      prev.map((company) =>
+        company.id === updatedCompany.id ? updatedCompany : company
+      )
+    )
+  }, [])
+
+  const removeCompanyLocal = useCallback((id: string) => {
+    setCompanies((prev) => prev.filter((company) => company.id !== id))
+  }, [])
+
+  return {
+    companies,
+    loading,
+    addCompanyLocal,
+    updateCompanyLocal,
+    removeCompanyLocal,
+    refetch: fetchCompanies,
+  }
 }

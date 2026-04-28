@@ -9,19 +9,12 @@ import TransactionTable from "@/components/o/TransactionTable"
 import LoadingSpinner from "@/components/o/LoadingSpinner"
 import EmptyState from "@/components/o/EmptyState"
 import MobileAddButton from "@/components/o/MobileAddButton"
-import { TransactionData, TransactionModal } from "./add"
+import { TransactionModal } from "./add"
 import { Transaction } from "@/hooks/useTransactions"
-import { deleteTransactions } from "./upload"
+import { addPaymentToTransaction, deleteTransaction } from "./upload"
 import DeleteConfirmModal from "@/components/DeleteConfirmModal"
-
-type Props = {
-  item: Transaction & {
-    operationDate: string
-    daysRemaining: number
-    remainingAmount: number
-  }
-  showExpanded: boolean
-}
+import { toast } from "sonner"
+import AddPaymentModal from "@/components/o/AddPaymentDialog"
 
 export default function OperationsContent() {
   const searchParams = useSearchParams()
@@ -33,8 +26,18 @@ export default function OperationsContent() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<Transaction | null>(null)
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null) // 🆕
   const [isDeleting, setIsDeleting] = useState(false)
-  const { transactions, loading, removeTransLocal } = useTransactions()
+  const [addPaymentItem, setAddPaymentItem] = useState<Transaction | null>(null)
+
+  const {
+    transactions,
+    loading,
+    removeTransactionLocal,
+    addTransactionLocal,
+    updateTransactionLocal, // 🆕
+  } = useTransactions()
 
   // معالجة البيانات وحساب أيام المتبقية والمبالغ
   const processed = useMemo(() => {
@@ -58,30 +61,66 @@ export default function OperationsContent() {
     })
   }, [transactions])
 
-  const handleSaveTransaction = (data: TransactionData) => {
-    console.log("تم استلام البيانات في الصفحة الرئيسية:", data)
-    // هنا يمكنك تحديث القائمة المحلية (List) بالبيانات الجديدة
-  }
-
   const handleConfirmDelete = async () => {
     if (!itemToDelete?.id) return
     setIsDeleting(true)
     try {
-      await deleteTransactions(itemToDelete.id)
-      removeTransLocal(itemToDelete.id)
-      setItemToDelete(null) // إغلاق النافذة بعد النجاح
+      await deleteTransaction(itemToDelete.id)
+      removeTransactionLocal(itemToDelete.id)
+      setItemToDelete(null)
     } catch (error) {
-      alert("فشل الحذف")
+      toast.error("فشل الحذف", { position: "bottom-left" })
     } finally {
       setIsDeleting(false)
     }
   }
 
+  // دالة فتح نافذة التعديل
+  const handleEditRequest = (transaction: Transaction) => {
+    setEditingTransaction(transaction)
+    setIsAddOpen(true)
+  }
+
+  // بعد نجاح الحفظ/التحديث
+  const handleSave = (savedTransaction: Transaction) => {
+    if (editingTransaction) {
+      // في حالة التعديل
+      updateTransactionLocal(savedTransaction)
+      setEditingTransaction(null)
+    } else {
+      // في حالة الإضافة
+      addTransactionLocal(savedTransaction)
+    }
+    setIsAddOpen(false)
+  }
+
+  // عند إغلاق المودال، نلغي وضع التعديل
+  const handleCloseModal = () => {
+    setIsAddOpen(false)
+    setEditingTransaction(null)
+  }
+
+  const handleAddPaymentSave = async (newAmount: number) => {
+    if (!addPaymentItem) return
+    const newTotalReceived = (addPaymentItem.received_amount || 0) + newAmount
+    try {
+      // تحديث في قاعدة البيانات
+      const updatedTransaction = await addPaymentToTransaction(
+        addPaymentItem.id,
+        newTotalReceived
+      )
+      // تحديث محلياً
+      updateTransactionLocal(updatedTransaction)
+      toast.success(`تم إضافة ${newAmount.toLocaleString()} ر.س بنجاح`)
+      setAddPaymentItem(null)
+    } catch (error) {
+      toast.error("فشل في تحديث المبلغ المستلم")
+    }
+  }
+
   useEffect(() => {
     const queryFromUrl = searchParams.get("search")
-    if (queryFromUrl) {
-      setSearchQuery(queryFromUrl)
-    }
+    if (queryFromUrl) setSearchQuery(queryFromUrl)
   }, [searchParams])
 
   // تصفية وفرز
@@ -126,7 +165,10 @@ export default function OperationsContent() {
         <Header
           isDarkMode={isDarkMode}
           onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-          onAddNew={() => setIsAddOpen(true)}
+          onAddNew={() => {
+            setEditingTransaction(null) // تأكيد وضع الإضافة
+            setIsAddOpen(true)
+          }}
         />
 
         <SearchAndFilters
@@ -154,6 +196,8 @@ export default function OperationsContent() {
               sortBy={sortBy}
               setSortBy={setSortBy}
               onDeleteRequest={(item) => setItemToDelete(item)}
+              onEditRequest={handleEditRequest} // 🆕
+              onAddPaymentRequest={(item) => setAddPaymentItem(item)}
             />
           ) : (
             <EmptyState />
@@ -161,13 +205,20 @@ export default function OperationsContent() {
         </div>
       </div>
 
-      <MobileAddButton onClick={() => setIsAddOpen(true)} />
+      <MobileAddButton
+        onClick={() => {
+          setEditingTransaction(null)
+          setIsAddOpen(true)
+        }}
+      />
 
+      {/* المودال يدعم الإضافة والتعديل معًا */}
       <TransactionModal
         isOpen={isAddOpen}
-        setIsOpen={setIsAddOpen}
-        onSave={handleSaveTransaction}
+        setIsOpen={handleCloseModal} // 🆕 مهم لإلغاء التعديل عند الإغلاق
+        onSave={handleSave} // 🆕 دالة موحدة
         activeTab={activeTab}
+        initialData={editingTransaction} // 🆕
       />
 
       <DeleteConfirmModal
@@ -175,6 +226,15 @@ export default function OperationsContent() {
         onClose={() => setItemToDelete(null)}
         onConfirm={handleConfirmDelete}
         isDeleting={isDeleting}
+      />
+
+      <AddPaymentModal
+        isOpen={!!addPaymentItem}
+        onClose={() => setAddPaymentItem(null)}
+        personName={addPaymentItem?.resident_name || ""}
+        agreedAmount={addPaymentItem?.agreed_amount || 0}
+        previouslyReceivedAmount={addPaymentItem?.received_amount || 0}
+        onSave={handleAddPaymentSave}
       />
     </div>
   )

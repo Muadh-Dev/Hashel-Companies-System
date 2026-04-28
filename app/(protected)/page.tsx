@@ -16,22 +16,15 @@ import {
 import { useTransactions } from "@/hooks/useTransactions"
 import { useCompanies } from "@/hooks/useCompanies"
 import { createClient } from "@/lib/supabase/supabaseSsrClient"
-
-const EMPLOYEE_NAME = "خالد"
-const COMPANY_NAME = "شركة هاشل اليامي"
-
-const supabase = await createClient()
-const {
-  data: { user },
-} = await supabase.auth.getUser()
-
-if (!user) {
-  redirect("/auth/login")
-}
+import { useAuth } from "@/context/AuthContext"
 
 export default function EmployeeDashboard() {
   const { transactions, loading: transactionsLoading } = useTransactions()
   const { companies, loading: companiesLoading } = useCompanies()
+  const { user } = useAuth()
+
+  const EMPLOYEE_NAME = user?.name?.trim().split(" ")[0] || "مستخدم"
+  const COMPANY_NAME = "شركة هاشل اليامي"
 
   const isLoading = transactionsLoading || companiesLoading
 

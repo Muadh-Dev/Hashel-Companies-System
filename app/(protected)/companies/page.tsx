@@ -1,12 +1,15 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { useCompanies } from "@/hooks/useCompanies"
+import { useCompanies, Company } from "@/hooks/useCompanies" // النسخة المحدثة
 import Header from "@/components/Header"
 import SearchAndFilters from "@/components/companies/SearchAndFiltersCompany"
 import TransactionTableCompanies from "@/components/companies/CompanyTable"
 import LoadingSpinner from "@/components/o/LoadingSpinner"
 import EmptyState from "@/components/o/EmptyState"
+import { CompanyModal } from "./add" // أو المسار المناسب
+import { deleteCompany } from "./upload"
+import DeleteConfirmModal from "@/components/DeleteConfirmModal"
 import { toast } from "sonner"
 
 export default function HomePage() {
@@ -16,7 +19,18 @@ export default function HomePage() {
   const [sortBy, setSortBy] = useState<"date" | "expiry">("date")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
 
-  const { companies, loading } = useCompanies()
+  const [isAddOpen, setIsAddOpen] = useState(false)
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null)
+  const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const {
+    companies,
+    loading,
+    addCompanyLocal,
+    removeCompanyLocal,
+    updateCompanyLocal,
+  } = useCompanies()
 
   const processed = useMemo(() => {
     if (!companies) return []
@@ -41,9 +55,7 @@ export default function HomePage() {
         unified.includes(searchQuery) ||
         establishment.includes(searchQuery) ||
         social.includes(searchQuery)
-
       const matchesTab = activeTab === "الكل" || item.entity_type === activeTab
-
       return matchesSearch && matchesTab
     })
 
@@ -60,17 +72,53 @@ export default function HomePage() {
     })
   }, [processed, searchQuery, activeTab, sortBy, sortOrder])
 
+  // === Handlers ===
+  const handleAddNew = () => {
+    setEditingCompany(null)
+    setIsAddOpen(true)
+  }
+
+  const handleEdit = (company: Company) => {
+    setEditingCompany(company)
+    setIsAddOpen(true)
+  }
+
+  const handleSave = (company: Company) => {
+    if (editingCompany) {
+      updateCompanyLocal(company)
+      setEditingCompany(null)
+    } else {
+      addCompanyLocal(company)
+    }
+    setIsAddOpen(false)
+  }
+
+  const handleDeleteRequest = (company: Company) => {
+    setCompanyToDelete(company)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!companyToDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteCompany(companyToDelete.id)
+      removeCompanyLocal(companyToDelete.id)
+      setCompanyToDelete(null)
+      toast.success("تم حذف الشركة بنجاح")
+    } catch (error) {
+      toast.error("فشل في حذف الشركة")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <div
       className="min-h-screen bg-slate-50 p-4 text-slate-900 transition-colors duration-300 md:p-12 dark:bg-slate-950 dark:text-slate-100"
       dir="rtl"
     >
       <Header
-        onAddNew={() =>
-          toast.warning("جاري العمل على هذا القسم", {
-            position: "bottom-left",
-          })
-        }
+        onAddNew={handleAddNew}
         title="ملف الشركات"
         subtitle="لوحة تحكم إدارة الشركات"
         buttonText="إضافة شركة"
@@ -99,12 +147,31 @@ export default function HomePage() {
               showExpanded={showExpanded}
               sortBy={sortBy}
               setSortBy={setSortBy}
+              onEditRequest={handleEdit}
+              onDeleteRequest={handleDeleteRequest}
             />
           ) : (
             <EmptyState />
           )}
         </div>
       </div>
+
+      <CompanyModal
+        isOpen={isAddOpen}
+        setIsOpen={(open) => {
+          setIsAddOpen(open)
+          if (!open) setEditingCompany(null)
+        }}
+        onSave={handleSave}
+        initialData={editingCompany}
+      />
+
+      <DeleteConfirmModal
+        isOpen={!!companyToDelete}
+        onClose={() => setCompanyToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
+      />
     </div>
   )
 }

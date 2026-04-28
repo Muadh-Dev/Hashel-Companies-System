@@ -1,37 +1,20 @@
 "use client"
 import { useState } from "react"
 import {
-  User,
   Users,
   Database,
   FileSpreadsheet,
   Download,
   UserPlus,
 } from "lucide-react"
-import { Dialog } from "@/components/Dialog"
-import {
-  Input,
-  Label,
-  SearchableSelect,
-  SubHeader,
-} from "@/components/ui-helpers"
 import ExportToExcel from "@/components/o/ExportToExcel"
 import ExportCompaniesToExcel from "@/components/c/ExportCompaniesConnectToExcel"
-import { Excel } from "@/components/companies/Excel"
+import ExportCompaniesFullToExcel from "@/components/companies/ExportCompaniesFullToExcel"
+import { useAuth } from "@/context/AuthContext"
 import { toast } from "sonner"
 
 export default function MyPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false)
-
-  const [name, setName] = useState("")
-  const [role, setRole] = useState("")
-
-  const isFormInvalid = !name.trim() || !role
-
-  const handleSave = () => {
-    console.log("تم الحفظ:", { name, role })
-    setIsModalOpen(false)
-  }
+  const { user } = useAuth()
 
   return (
     // إضافة dir="rtl" لدعم الاتجاه العربي بشكل كامل
@@ -66,18 +49,22 @@ export default function MyPage() {
           </div>
 
           <div className="relative z-10">
-            <button
-              // onClick={() => setIsModalOpen(true)}
-              onClick={() =>
-                toast.error("لا توجد لديك الصلاحيات لإضافة مستخدمين", {
-                  position: "top-center",
-                })
-              }
+            <a
+              href="/users"
+              onClick={(e) => {
+                // إذا لم يكن المستخدم مديراً
+                if (!user?.is_admin) {
+                  e.preventDefault() // منع الرابط من الانتقال لصفحة /users
+                  toast.warning("لا توجد لديك صلاحية للدخول!", {
+                    position: "top-center",
+                  })
+                }
+              }}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 sm:w-auto"
             >
               <UserPlus className="h-4 w-4" />
-              إضافة مستخدم
-            </button>
+              إدارة المستخدمين
+            </a>
           </div>
         </div>
 
@@ -144,47 +131,12 @@ export default function MyPage() {
           </div>
 
           <div className="relative z-10 flex justify-end">
-            <Excel />
+            <ExportCompaniesFullToExcel />
           </div>
         </div>
       </div>
 
       {/* ---------------- نافذة الإضافة (Modal) ---------------- */}
-      <Dialog
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-        title="إضافة مستخدم جديد"
-        isSaveDisabled={isFormInvalid}
-      >
-        <div dir="rtl" className="space-y-6">
-          <SubHeader title="البيانات الأساسية" icon={User} />
-
-          <div className="space-y-4">
-            <div>
-              <Label text="اسم المستخدم" required />
-              <Input
-                value={name}
-                onChange={setName}
-                placeholder="أدخل الاسم رباعي..."
-              />
-            </div>
-
-            <div>
-              <Label text="الصلاحية" required />
-              <SearchableSelect
-                placeholder="اختر الصلاحية..."
-                value={role}
-                onChange={setRole}
-                options={[
-                  { id: "1", name: "مدير النظام" },
-                  { id: "2", name: "مشرف" },
-                ]}
-              />
-            </div>
-          </div>
-        </div>
-      </Dialog>
     </div>
   )
 }

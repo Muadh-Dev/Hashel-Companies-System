@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase/supabaseSsrClient"
+import { toast } from "sonner"
 
 // تصدير النوع بشكل صحيح لكي نستخدمه في باقي المكونات
 export type Companys = {
@@ -26,6 +27,9 @@ export function useConectCompanies() {
 
       if (error) {
         console.error("خطأ في جلب بيانات الشركات:", error)
+        toast.error("خطأ في جلب بيانات الشركات تحقق من إتصالك بالإنترنت!", {
+          position: "top-center",
+        })
         setConectCompanies([])
       } else {
         setConectCompanies(data || [])

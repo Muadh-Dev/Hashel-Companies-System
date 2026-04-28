@@ -29,12 +29,16 @@ type Props = {
   showExpanded: boolean
 
   onDeleteRequest: (item: Transaction) => void
+  onEditRequest: (item: Transaction) => void
+  onAddPaymentRequest: (item: Transaction) => void
 }
 
 export default function TransactionRow({
   item,
   showExpanded,
   onDeleteRequest,
+  onEditRequest,
+  onAddPaymentRequest,
 }: Props) {
   return (
     <tr className="text-sm transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
@@ -186,22 +190,14 @@ export default function TransactionRow({
 
             <DropdownMenuItem
               className="cursor-pointer"
-              onClick={() =>
-                toast.warning("جاري العمل على هذا القسم", {
-                  position: "bottom-left",
-                })
-              }
+              onClick={() => onAddPaymentRequest?.(item)}
             >
               <BanknoteArrowUp className="mr-2 h-4 w-4" /> إضافة مبلغ مالي
             </DropdownMenuItem>
 
             <DropdownMenuItem
               className="cursor-pointer"
-              onClick={() =>
-                toast.warning("جاري العمل على هذا القسم", {
-                  position: "bottom-left",
-                })
-              }
+              onClick={() => onEditRequest?.(item)}
             >
               <Edit className="mr-2 h-4 w-4" /> تعديل
             </DropdownMenuItem>

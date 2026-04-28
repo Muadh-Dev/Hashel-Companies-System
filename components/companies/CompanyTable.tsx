@@ -15,12 +15,16 @@ type Props = {
   showExpanded: boolean
   sortBy: "date" | "expiry"
   setSortBy: (val: "date" | "expiry") => void
+  onEditRequest: (item: Company) => void
+  onDeleteRequest: (item: Company) => void
 }
 
 export default function TransactionTableCompanies({
   data,
   showExpanded,
   setSortBy,
+  onEditRequest,
+  onDeleteRequest,
 }: Props) {
   return (
     <div className="overflow-x-auto rounded-[2rem] border border-slate-200 bg-white/50 shadow-xl backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/50">
@@ -86,6 +90,9 @@ export default function TransactionTableCompanies({
             <th className="border-l border-slate-200 p-4 font-bold dark:border-slate-700/50">
               عدد إصدار التأشيرات
             </th>
+            <th className="border-l border-slate-200 p-4 font-bold dark:border-slate-700/50">
+              عدد الموظفين
+            </th>
 
             <th className="sticky left-0 z-10 bg-slate-50 p-4 text-center font-bold shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.1)] dark:bg-slate-800">
               إجراءات
@@ -98,6 +105,8 @@ export default function TransactionTableCompanies({
               key={item.id}
               item={item}
               showExpanded={showExpanded}
+              onEditRequest={onEditRequest}
+              onDeleteRequest={onDeleteRequest}
             />
           ))}
         </tbody>

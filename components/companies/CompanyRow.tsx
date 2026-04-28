@@ -15,9 +15,16 @@ import {
 type Props = {
   item: Company
   showExpanded: boolean
+  onEditRequest: (item: Company) => void
+  onDeleteRequest: (item: Company) => void
 }
 
-export default function CompanyRow({ item, showExpanded }: Props) {
+export default function CompanyRow({
+  item,
+  showExpanded,
+  onEditRequest,
+  onDeleteRequest,
+}: Props) {
   return (
     <tr className="text-sm transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
       {/* الرقم الموحد */}
@@ -102,6 +109,11 @@ export default function CompanyRow({ item, showExpanded }: Props) {
         {item.visas_count}
       </td>
 
+      {/* عدد العمال */}
+      <td className="border-l border-slate-100 p-4 font-bold dark:border-slate-800">
+        {item.employees_count}
+      </td>
+
       {/* إجراءات */}
       <td className="sticky left-0 z-10 border-r border-slate-100 bg-white p-4 text-center shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)] dark:border-slate-800 dark:bg-slate-900">
         <DropdownMenu dir="rtl">
@@ -118,11 +130,7 @@ export default function CompanyRow({ item, showExpanded }: Props) {
 
             <DropdownMenuItem
               className="cursor-pointer"
-              onClick={() =>
-                toast.warning("جاري العمل على هذا القسم", {
-                  position: "bottom-left",
-                })
-              }
+              onClick={() => onEditRequest(item)}
             >
               <Edit className="mr-2 h-4 w-4" /> تعديل
             </DropdownMenuItem>
@@ -131,11 +139,7 @@ export default function CompanyRow({ item, showExpanded }: Props) {
 
             <DropdownMenuItem
               className="cursor-pointer text-red-600 focus:text-red-600"
-              onClick={() =>
-                toast.warning("جاري العمل على هذا القسم", {
-                  position: "bottom-left",
-                })
-              }
+              onClick={() => onEditRequest(item)}
             >
               <Trash className="mr-2 h-4 w-4" /> حذف
             </DropdownMenuItem>

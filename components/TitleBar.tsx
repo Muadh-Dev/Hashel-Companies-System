@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Minus, X, LayoutGrid, Maximize2, Minimize2 } from "lucide-react"
+import Image from "next/image"
 
 export default function TitleBar() {
   const [isMaximized, setIsMaximized] = useState(false)
@@ -68,16 +69,8 @@ export default function TitleBar() {
           y: e.clientY - rect.top,
         })
       }}
-      className="group/header relative top-0 left-0 z-9999 flex h-11 w-full items-center justify-between overflow-hidden border-b border-gray-200/30 bg-linear-to-r from-white via-gray-50/80 to-white px-3 shadow-[0_2px_8px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] backdrop-blur-xl select-none dark:border-slate-700/20 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-900 dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.03)]"
+      className="group/header relative top-0 left-0 z-9999 hidden h-11 w-full items-center justify-between overflow-hidden border-b border-gray-200/30 bg-linear-to-r from-white via-gray-50/80 to-white px-3 shadow-[0_2px_8px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] backdrop-blur-xl select-none md:flex lg:flex dark:border-slate-700/20 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-900 dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.03)]"
     >
-      {/* تأثير إضاءة متتبع للماوس في الخلفية */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover/header:opacity-100"
-        style={{
-          background: `radial-gradient(400px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(59, 130, 246, 0.03), transparent 60%)`,
-        }}
-      />
-
       {/* Left Section - Logo & Title */}
       <div
         className="relative z-10 flex items-center gap-3"
@@ -86,15 +79,18 @@ export default function TitleBar() {
         {/* Logo Container with Glow Effect */}
         <div className="group/logo relative">
           {/* تأثير التوهج الدائري */}
-          <div className="absolute -inset-1 rounded-lg bg-blue-500/0 blur-md transition-all duration-300 group-hover/logo:bg-blue-500/15 dark:group-hover/logo:bg-blue-400/10" />
+          {/* <div className="absolute -inset-1 rounded-lg bg-blue-500/0 blur-md transition-all duration-300 group-hover/logo:bg-blue-500/15 dark:group-hover/logo:bg-blue-400/10" /> */}
 
           {/* تأثير التوهج الداخلي */}
           <div className="absolute inset-0 rounded-lg bg-linear-to-br from-blue-500/5 to-transparent opacity-0 transition-opacity duration-300 group-hover/logo:opacity-100 dark:from-blue-400/5" />
 
-          <div className="relative flex h-7 w-7 items-center justify-center rounded-lg border border-blue-100/50 bg-linear-to-br from-blue-50 to-white shadow-sm transition-all duration-300 group-hover/logo:scale-105 group-hover/logo:border-blue-200 group-hover/logo:shadow-md dark:border-blue-900/30 dark:from-blue-950/50 dark:to-slate-900 dark:group-hover/logo:border-blue-800">
-            <LayoutGrid
-              className="h-3.5 w-3.5 text-blue-600 transition-all duration-300 group-hover/logo:scale-110 group-hover/logo:rotate-12 dark:text-blue-400"
-              strokeWidth={2.5}
+          <div className="relative flex h-7 w-7 items-center justify-center rounded-lg border border-blue-100/50 bg-primary shadow-sm transition-all duration-300 group-hover/logo:scale-105 group-hover/logo:border-blue-200 group-hover/logo:shadow-md dark:border-blue-900/30 dark:from-blue-950/50 dark:to-slate-900 dark:group-hover/logo:border-blue-800">
+            <Image
+              src="/HashelSMWaiteLogo.png"
+              alt={"logo"}
+              width={20}
+              height={20}
+              className="transition-all duration-300 group-hover/logo:scale-110 group-hover/logo:rotate-12 dark:text-blue-400"
             />
           </div>
         </div>
@@ -103,15 +99,11 @@ export default function TitleBar() {
         <div className="group/title flex cursor-default flex-col justify-center">
           <div className="flex items-center gap-1.5">
             <span className="text-[13px] leading-tight font-semibold tracking-tight text-gray-800 transition-all duration-300 group-hover/title:text-gray-900 dark:text-slate-100 dark:group-hover/title:text-white">
-              Hashel Companies System
-            </span>
-            {/* شارة صغيرة */}
-            <span className="hidden rounded-md border border-blue-200/30 bg-linear-to-r from-blue-500/10 to-blue-600/10 px-1.5 py-0.5 text-[8px] font-bold tracking-widest text-blue-600 uppercase transition-all duration-300 group-hover/title:border-blue-300 group-hover/title:shadow-sm sm:inline-block dark:border-blue-800/30 dark:from-blue-400/10 dark:to-blue-300/10 dark:text-blue-400 dark:group-hover/title:border-blue-700">
-              Pro
+              نظام شركات هاشل اليامي
             </span>
           </div>
           <span className="text-[9px] leading-tight font-medium tracking-wider text-gray-400 uppercase transition-colors duration-300 group-hover/title:text-gray-500 dark:text-slate-500 dark:group-hover/title:text-slate-400">
-            Enterprise v2.0
+            V1.0
           </span>
         </div>
       </div>
