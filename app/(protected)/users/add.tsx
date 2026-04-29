@@ -268,7 +268,7 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
                             [perm.key]: labelToPermission(val),
                           }))
                         }
-                        options={["ممنوع", "مشاهدة", "تعديل"]}
+                        options={["ممنوع", "تعديل"]}
                         placeholder="اختر"
                       />
                     </div>

@@ -339,11 +339,11 @@ export function TransactionModal({
               </FormField>
 
               <FormField label="نوع الإجراء" required>
-                <Select
-                  options={[data.service_type]}
+                <Input
                   value={data.service_type}
                   onChange={(v) => handleInputChange("service_type", v)}
-                  placeholder="اختر الإجراء"
+                  disabled
+                  // placeholder="اختر الإجراء"
                 />
               </FormField>
               <FormField label="هل ما يزال يعمل في الشركة؟">
@@ -537,12 +537,14 @@ const Input = ({
   value,
   onChange,
   maxLength,
+  disabled, // Added this
 }: {
   type?: string
   placeholder?: string
   value: string | number | null
   onChange: (v: string) => void
   maxLength?: number
+  disabled?: boolean
 }) => (
   <input
     type={type}
@@ -550,7 +552,8 @@ const Input = ({
     placeholder={placeholder}
     maxLength={maxLength}
     onChange={(e) => onChange(e.target.value)}
-    className="h-12 w-full rounded-xl border border-input bg-background px-4 font-medium text-foreground transition-all outline-none placeholder:text-muted-foreground/40 focus:ring-2 focus:ring-primary/20"
+    disabled={disabled}
+    className="h-12 w-full rounded-xl border border-input bg-background px-4 font-medium text-foreground transition-all outline-none placeholder:text-muted-foreground/40 focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
   />
 )
 
