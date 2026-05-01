@@ -132,7 +132,7 @@ export default function EmployeeDashboard() {
 
   return (
     <div
-      className="min-h-screen bg-background p-6 text-foreground transition-colors duration-300 md:p-10"
+      className="min-h-screen p-6 text-foreground transition-colors duration-300 md:p-10 dark:bg-slate-950"
       dir="rtl"
     >
       <div className="mx-auto max-w-7xl space-y-10">

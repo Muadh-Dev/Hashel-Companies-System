@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/lib/supabase/supabaseSsrClient"
 import { toast } from "sonner"
+import { useUpsert } from "@/components/ExcelImporter/useUpsert"
 
 export type Company = {
   id: string
@@ -22,57 +23,69 @@ export type Company = {
   visas_count: number
   exemption_amount: number
   newspaper_price: number
-  created_at: string
   employees_count: number
+  created_at: string
 }
 
 export function useCompanies() {
   const [companies, setCompanies] = useState<Company[]>([])
-  const [loading, setLoading] = useState(true)
+  const [fetching, setFetching] = useState(true)
 
+  // ── جلب البيانات ──────────────────────────────────────────
   const fetchCompanies = useCallback(async () => {
-    setLoading(true)
+    setFetching(true)
     const { data, error } = await supabase
       .from("companies")
       .select("*")
       .order("created_at", { ascending: false })
 
     if (error) {
-      console.error("خطأ في جلب بيانات الشركات:", error)
+      console.error("[useCompanies] fetchCompanies:", error)
       toast.error("خطأ في جلب بيانات الشركات", { position: "top-center" })
       setCompanies([])
     } else {
-      setCompanies(data || [])
+      setCompanies(data ?? [])
     }
-    setLoading(false)
+    setFetching(false)
   }, [])
 
   useEffect(() => {
     fetchCompanies()
   }, [fetchCompanies])
 
-  const addCompanyLocal = useCallback((newCompany: Company) => {
-    setCompanies((prev) => [newCompany, ...prev])
-  }, [])
+  // ── هوك الاستيراد الجنيريك ──────────────────────────────
+  const { upsert, loading: upserting } = useUpsert<Company>({
+    table: "companies",
+    conflictColumn: "unified_number",
+    onSuccess: fetchCompanies, // يُحدّث القائمة تلقائياً بعد النجاح
+  })
 
-  const updateCompanyLocal = useCallback((updatedCompany: Company) => {
-    setCompanies((prev) =>
-      prev.map((company) =>
-        company.id === updatedCompany.id ? updatedCompany : company
-      )
-    )
-  }, [])
+  // ── تحديثات محلية (للـ optimistic UI) ───────────────────
+  const addCompanyLocal = useCallback(
+    (company: Company) => setCompanies((prev) => [company, ...prev]),
+    []
+  )
 
-  const removeCompanyLocal = useCallback((id: string) => {
-    setCompanies((prev) => prev.filter((company) => company.id !== id))
-  }, [])
+  const updateCompanyLocal = useCallback(
+    (updated: Company) =>
+      setCompanies((prev) =>
+        prev.map((c) => (c.id === updated.id ? updated : c))
+      ),
+    []
+  )
+
+  const removeCompanyLocal = useCallback(
+    (id: string) => setCompanies((prev) => prev.filter((c) => c.id !== id)),
+    []
+  )
 
   return {
     companies,
-    loading,
+    loading: fetching || upserting,
+    upsertCompanies: upsert,
+    refetch: fetchCompanies,
     addCompanyLocal,
     updateCompanyLocal,
     removeCompanyLocal,
-    refetch: fetchCompanies,
   }
 }
