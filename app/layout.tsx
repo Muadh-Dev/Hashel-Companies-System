@@ -9,9 +9,9 @@ import localFont from "next/font/local"
 
 const tajawal = localFont({
   src: [
-    { path: "../public/fonts/tajawal-regular.ttf", weight: "400" },
-    { path: "../public/fonts/tajawal-medium.ttf", weight: "500" },
-    { path: "../public/fonts/tajawal-bold.ttf", weight: "700" },
+    { path: "./_fonts/Tajawal-Regular.ttf", weight: "400" },
+    { path: "./_fonts/Tajawal-Medium.ttf", weight: "500" },
+    { path: "./_fonts/Tajawal-Bold.ttf", weight: "700" },
   ],
 })
 
