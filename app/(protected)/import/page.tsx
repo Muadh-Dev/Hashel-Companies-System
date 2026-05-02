@@ -7,7 +7,7 @@ import { useConectCompanies } from "@/hooks/useConectCompanies"
 import { useTransactions } from "@/hooks/useTransactions"
 
 // ─────────────────────────────
-// الأعمدة
+// أعمدة الشركات
 // ─────────────────────────────
 const companyColumns: TargetColumn[] = [
   { key: "unified_number", label: "الرقم الموحد", required: true },
@@ -34,21 +34,27 @@ const companyColumns: TargetColumn[] = [
   { key: "employees_count", label: "عدد الموظفين", numeric: true },
 ]
 
+// ─────────────────────────────
+// أعمدة ربط الشركات
+// ─────────────────────────────
 const companyConnectColumns: TargetColumn[] = [
   { key: "com1", label: "رقم الشركة الأولى", numeric: true, required: true },
   { key: "com2", label: "رقم الشركة الثانية", numeric: true, required: true },
 ]
 
+// ─────────────────────────────
+// أعمدة المعاملات
+// ─────────────────────────────
 const transactionColumns: TargetColumn[] = [
   { key: "resident_name", label: "اسم المقيم", required: true },
   { key: "iqama_number", label: "رقم الإقامة", required: true },
-  { key: "nationality", label: "الجنسية" },
-  { key: "profession", label: "المهنة" },
   {
     key: "unified_number_of_company",
     label: "الرقم الموحد للشركة",
     required: true,
   },
+  { key: "nationality", label: "الجنسية" },
+  { key: "profession", label: "المهنة" },
   { key: "service_type", label: "نوع الخدمة" },
   { key: "expiry_date", label: "تاريخ الانتهاء" },
   { key: "payment_date", label: "تاريخ السداد" },
@@ -56,7 +62,6 @@ const transactionColumns: TargetColumn[] = [
   { key: "tashira_number", label: "رقم التأشيرة" },
   { key: "hodod_number", label: "رقم الحدود" },
   { key: "working", label: "يعمل حالياً؟" },
-
   { key: "work_permit", label: "رخصة العمل", numeric: true },
   { key: "passports", label: "الجوازات", numeric: true },
   { key: "medical_insurance", label: "التأمين الطبي", numeric: true },
@@ -65,7 +70,6 @@ const transactionColumns: TargetColumn[] = [
   { key: "agreed_amount", label: "المبلغ المتفق", numeric: true },
   { key: "received_amount", label: "المبلغ المستلم", numeric: true },
   { key: "phone_num", label: "الجوال", numeric: true },
-
   { key: "note", label: "ملاحظات" },
 ]
 
@@ -73,41 +77,41 @@ const transactionColumns: TargetColumn[] = [
 // الصفحة
 // ─────────────────────────────
 export default function ImportPage() {
-  const { upsertCompanies, loading: companiesLoading } = useCompanies()
-  const { upsertConectCompanies, loading: connectLoading } =
-    useConectCompanies()
-  const { upsertTransactions, loading: transactionsLoading } = useTransactions()
+  const { upsertCompanies } = useCompanies()
+  const { upsertConectCompanies } = useConectCompanies()
+  const { upsertTransactions } = useTransactions()
 
   return (
     <div className="mx-auto max-w-7xl space-y-12 p-8" dir="rtl">
-      {/* الشركات */}
-      <Section title="استيراد الشركات" desc="تحديث أو إضافة الشركات تلقائياً">
+      <Section
+        title="استيراد الشركات"
+        desc="تحديث أو إضافة الشركات بناءً على الرقم الموحد"
+      >
         <ExcelImporter
           targetColumns={companyColumns}
-          onImport={upsertCompanies}
-          buttonLabel={
-            companiesLoading ? "جاري المعالجة..." : "استيراد الشركات"
-          }
+          onImport={(data, onProgress) => upsertCompanies(data, onProgress)}
+          buttonLabel="استيراد الشركات"
         />
       </Section>
 
-      {/* ربط الشركات */}
-      <Section title="ربط الشركات" desc="ربط شركتين ببعض">
+      <Section title="ربط الشركات" desc="إضافة روابط بين شركتين">
         <ExcelImporter
           targetColumns={companyConnectColumns}
-          onImport={upsertConectCompanies}
-          buttonLabel={connectLoading ? "جاري المعالجة..." : "استيراد الربط"}
+          onImport={(data, onProgress) =>
+            upsertConectCompanies(data, onProgress)
+          }
+          buttonLabel="استيراد الربط"
         />
       </Section>
 
-      {/* العمليات */}
-      <Section title="استيراد العمليات" desc="إضافة أو تحديث بيانات المقيمين">
+      <Section
+        title="استيراد المعاملات"
+        desc="إضافة أو تحديث بيانات المقيمين بناءً على رقم الإقامة"
+      >
         <ExcelImporter
           targetColumns={transactionColumns}
-          onImport={upsertTransactions}
-          buttonLabel={
-            transactionsLoading ? "جاري المعالجة..." : "استيراد العمليات"
-          }
+          onImport={(data, onProgress) => upsertTransactions(data, onProgress)}
+          buttonLabel="استيراد المعاملات"
         />
       </Section>
     </div>
@@ -115,14 +119,22 @@ export default function ImportPage() {
 }
 
 // ─────────────────────────────
-// Component مساعد
+// مكوّن مساعد
 // ─────────────────────────────
-function Section({ title, desc, children }: any) {
+function Section({
+  title,
+  desc,
+  children,
+}: {
+  title: string
+  desc: string
+  children: React.ReactNode
+}) {
   return (
-    <div>
+    <section>
       <h2 className="text-xl font-bold text-slate-800">{title}</h2>
-      <p className="mb-4 text-sm text-slate-500">{desc}</p>
+      <p className="mt-1 mb-4 text-sm text-slate-500">{desc}</p>
       {children}
-    </div>
+    </section>
   )
 }

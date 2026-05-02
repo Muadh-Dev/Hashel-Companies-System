@@ -317,6 +317,9 @@ export default function ExcelImporter({
 
   const currentSheet = sheets[activeSheetIndex]
 
+  const [previewLimit, setPreviewLimit] = useState(100)
+  const [rowOffset, setRowOffset] = useState(0) // بداية الاستيراد (0 = من أول صف)
+
   // ── حفظ تلقائي ──────────────────────────────────────────
   useEffect(() => {
     if (!currentSheet || mappings.length === 0 || skipSave.current) return
@@ -386,7 +389,9 @@ export default function ExcelImporter({
           const rows: any[][] = []
           let colCount = 0
 
-          ws.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+          let emptyStreak = 0
+          ws.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+            if (emptyStreak > 20) return // توقف بعد 20 صف فارغ متتالي
             const raw = Array.isArray(row.values) ? row.values.slice(1) : []
             if (rowNumber === 1) colCount = raw.length
 
@@ -401,8 +406,12 @@ export default function ExcelImporter({
               return val ?? ""
             })
 
-            if (!normalized.every((c) => c === "" || c === null))
-              rows.push(normalized)
+            if (normalized.every((c) => c === "" || c === null)) {
+              emptyStreak++
+              return
+            }
+            emptyStreak = 0
+            rows.push(normalized)
           })
 
           if (rows.length > 0) allSheets.push({ name: ws.name, data: rows })
@@ -522,7 +531,7 @@ export default function ExcelImporter({
       })
 
       const finalData = currentSheet.data
-        .slice(1, importCount + 1)
+        .slice(1 + rowOffset, 1 + rowOffset + importCount)
         .map((row) => {
           const obj: Record<string, any> = {}
           activeMappings.forEach((m) => {
@@ -554,8 +563,12 @@ export default function ExcelImporter({
     : 0
 
   const rowsForPreview = useMemo(
-    () => currentSheet?.data.slice(1, importCount + 1) ?? [],
-    [currentSheet, importCount]
+    () =>
+      currentSheet?.data.slice(
+        1 + rowOffset,
+        1 + rowOffset + Math.min(importCount, 100)
+      ) ?? [],
+    [currentSheet, importCount, rowOffset]
   )
 
   const hasErrors = useMemo(
@@ -761,6 +774,17 @@ export default function ExcelImporter({
                     setImportCount(Math.min(cap, Math.max(1, v)))
                   }}
                   className="w-24 rounded-lg border border-slate-200 bg-slate-50 p-1.5 text-center text-sm font-bold text-blue-600 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
+                />
+                <span className="text-xs text-slate-500">من صف</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={totalRowsInSheet - 1}
+                  value={rowOffset}
+                  onChange={(e) =>
+                    setRowOffset(Math.max(0, Number(e.target.value)))
+                  }
+                  className="w-20 rounded-lg border border-slate-200 bg-slate-50 p-1.5 text-center text-sm font-bold text-slate-600 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
                 <span className="text-xs text-slate-400">
                   من أصل {totalRowsInSheet.toLocaleString("ar-SA")} صف
