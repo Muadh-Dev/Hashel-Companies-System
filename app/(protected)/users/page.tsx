@@ -25,6 +25,7 @@ function formatPermissions(user: User): string {
     sponsorshipTransfer: "نقل الكفالة",
     visaIssuance: "إصدار تأشيرة",
     annualRenewal: "التجديد سنوي",
+    importData: "استيراد البيانات",
   }
   const items = Object.entries(user.permissions)
     .filter(([, v]) => v !== "none")

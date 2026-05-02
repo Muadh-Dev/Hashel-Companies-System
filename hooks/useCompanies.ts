@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { supabase } from "@/lib/supabase/supabaseSsrClient"
 import { toast } from "sonner"
 import { useUpsert } from "@/components/ExcelImporter/useUpsert"
@@ -79,6 +79,28 @@ export function useCompanies() {
     []
   )
 
+  const totalVisas = useMemo(() => {
+    return companies.reduce(
+      (sum, company) => sum + (Number(company.visas_count) || 0),
+      0
+    )
+  }, [companies])
+
+  const totalTransfers = useMemo(() => {
+    return companies.reduce(
+      (sum, company) => sum + (Number(company.transfers_count) || 0),
+      0
+    )
+  }, [companies])
+  const totalEmployees = useMemo(() => {
+    return companies.reduce(
+      (sum, company) => sum + (Number(company.employees_count) || 0),
+      0
+    )
+  }, [companies])
+
+  const count = companies.length
+
   return {
     companies,
     loading: fetching || upserting,
@@ -87,5 +109,9 @@ export function useCompanies() {
     addCompanyLocal,
     updateCompanyLocal,
     removeCompanyLocal,
+    totalTransfers,
+    totalVisas,
+    totalEmployees,
+    count,
   }
 }

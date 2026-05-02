@@ -4,25 +4,15 @@ import { useState, useCallback } from "react"
 import { supabase } from "@/lib/supabase/supabaseSsrClient"
 import { toast } from "sonner"
 
-// ============================================================
-// هوك جنيريك — يعمل مع أي جدول في قاعدة البيانات
-// الاستخدام:
-//   const { upsert, loading } = useUpsert({
-//     table: "employees",
-//     conflictColumn: "employee_id",
-//   })
-// ============================================================
-
 interface UseUpsertOptions {
-  /** اسم الجدول في Supabase */
   table: string
-  /** العمود الذي يُحسم عليه التعارض (UNIQUE column) */
   conflictColumn: string
-  /** حقول تُحذف قبل الإرسال (الافتراضي: id, created_at) */
   stripFields?: string[]
-  /** دالة تُستدعى بعد نجاح العملية (مثال: refetch) */
   onSuccess?: () => void | Promise<void>
 }
+
+// تعديل حجم الدفعة حسب عدد الأعمدة وحجم البيانات (500 رقم آمن جداً)
+const CHUNK_SIZE = 500
 
 export function useUpsert<T extends Record<string, any>>({
   table,
@@ -32,8 +22,12 @@ export function useUpsert<T extends Record<string, any>>({
 }: UseUpsertOptions) {
   const [loading, setLoading] = useState(false)
 
+  // أضفنا onProgress كمعامل ثانٍ هنا ليتوافق مع ما يرسله ExcelImporter
   const upsert = useCallback(
-    async (data: Partial<T>[]): Promise<void> => {
+    async (
+      data: Partial<T>[],
+      onProgress?: (done: number, total: number) => void
+    ): Promise<void> => {
       if (!data.length) {
         toast.warning("لا توجد بيانات للاستيراد")
         return
@@ -41,33 +35,43 @@ export function useUpsert<T extends Record<string, any>>({
 
       setLoading(true)
       try {
-        // حذف الحقول غير المرغوبة من كل صف
         const cleanData = data.map((row) => {
           const cleaned = { ...row }
           for (const field of stripFields) delete cleaned[field]
           return cleaned
         })
 
-        const { error } = await supabase.from(table).upsert(cleanData, {
-          onConflict: conflictColumn,
-          ignoreDuplicates: false,
-        })
+        const totalRows = cleanData.length
+        let processedRows = 0
 
-        if (error) {
-          console.error(`[useUpsert:${table}]`, error)
-          toast.error(`خطأ في الاستيراد: ${error.message}`, {
-            position: "top-center",
+        // تقسيم البيانات وإرسالها على دفعات
+        for (let i = 0; i < totalRows; i += CHUNK_SIZE) {
+          const chunk = cleanData.slice(i, i + CHUNK_SIZE)
+
+          const { error } = await supabase.from(table).upsert(chunk, {
+            onConflict: conflictColumn,
+            ignoreDuplicates: false,
           })
-          throw error
+
+          if (error) {
+            console.error(`[useUpsert:${table}]`, error)
+            toast.error(`خطأ في الاستيراد عند الصف ${i}: ${error.message}`, {
+              position: "top-center",
+            })
+            throw error
+          }
+
+          // تحديث شريط التقدم الفعلي
+          processedRows += chunk.length
+          onProgress?.(processedRows, totalRows)
         }
 
-        toast.success(`تم استيراد ${data.length} سجل بنجاح ✓`, {
+        toast.success(`تم استيراد ${totalRows} سجل بنجاح ✓`, {
           position: "top-center",
         })
 
         await onSuccess?.()
       } finally {
-        // setLoading(false) دائماً حتى في حالة الخطأ
         setLoading(false)
       }
     },

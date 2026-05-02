@@ -1,13 +1,13 @@
-// useConectCompanies.ts
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { supabase } from "@/lib/supabase/supabaseSsrClient"
 import { toast } from "sonner"
+import { useUpsert } from "@/components/ExcelImporter/useUpsert"
 
-// تصدير النوع بشكل صحيح لكي نستخدمه في باقي المكونات
+// تصدير النوع كما هو
 export type Companys = {
-  id?: string // أضفت الـ id لأنه ضروري كمفتاح (Key) في الـ React
+  id?: string
   com1: number
   com2: number
   created_at?: string
@@ -15,38 +15,65 @@ export type Companys = {
 
 export function useConectCompanies() {
   const [conectCompanies, setConectCompanies] = useState<Companys[]>([])
-  const [loading, setLoading] = useState(true)
+  const [fetching, setFetching] = useState(true)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from("conectCompanies")
-        .select("*")
-        .order("created_at", { ascending: false })
+  // ── جلب البيانات (محسن باستخدام useCallback) ──────────────────────────
+  const fetchConectCompanies = useCallback(async () => {
+    setFetching(true)
+    const { data, error } = await supabase
+      .from("conectCompanies")
+      .select("*")
+      .order("created_at", { ascending: false })
 
-      if (error) {
-        console.error("خطأ في جلب بيانات الشركات:", error)
-        toast.error("خطأ في جلب بيانات الشركات تحقق من إتصالك بالإنترنت!", {
-          position: "top-center",
-        })
-        setConectCompanies([])
-      } else {
-        setConectCompanies(data || [])
-      }
-      setLoading(false)
+    if (error) {
+      console.error("[useConectCompanies] fetch error:", error)
+      toast.error("خطأ في جلب بيانات ربط الشركات", {
+        position: "top-center",
+      })
+      setConectCompanies([])
+    } else {
+      setConectCompanies(data || [])
     }
-    fetchData()
+    setFetching(false)
   }, [])
 
-  // دالة لتحديث الجدول فوراً بعد إضافة ربط جديد من الـ Modal
-  const addCompanyLocal = (newCompany: Companys) => {
+  useEffect(() => {
+    fetchConectCompanies()
+  }, [fetchConectCompanies])
+
+  // ── هوك الاستيراد (استخدام المسميات الصحيحة للجدول والأعمدة) ──────────────
+  const { upsert, loading: upserting } = useUpsert<Companys>({
+    table: "conectCompanies", // اسم الجدول الأصلي لديك
+    conflictColumn: "id", // العمود المستخدم للتعارض، عادة id في جداول الربط
+    onSuccess: fetchConectCompanies,
+  })
+
+  // ── تحديثات محلية (Optimistic UI) ──────────────────────────────────
+  const addCompanyLocal = useCallback((newCompany: Companys) => {
     setConectCompanies((prev) => [newCompany, ...prev])
-  }
+  }, [])
 
-  const removeCompanyLocal = (id: string) => {
+  const updateCompanyLocal = useCallback((updated: Companys) => {
+    setConectCompanies((prev) =>
+      prev.map((item) => (item.id === updated.id ? updated : item))
+    )
+  }, [])
+
+  const removeCompanyLocal = useCallback((id: string) => {
     setConectCompanies((prev) => prev.filter((item) => item.id !== id))
-  }
+  }, [])
 
-  return { conectCompanies, loading, addCompanyLocal, removeCompanyLocal }
+  // ── الحسابات (استخدام useMemo) ────────────────────────────────────
+  const count = useMemo(() => conectCompanies.length, [conectCompanies])
+
+  return {
+    conectCompanies,
+    loading: fetching || upserting, // دمج حالتي التحميل
+    upsertConectCompanies: upsert,
+    refetch: fetchConectCompanies,
+    addCompanyLocal,
+    updateCompanyLocal,
+    removeCompanyLocal,
+    count,
+  }
 }

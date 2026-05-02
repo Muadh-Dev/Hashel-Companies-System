@@ -32,6 +32,8 @@ const getDefaultData = (): TransactionInput => ({
   phone_num: 0,
   payment_date: null,
   iqama_number: "",
+  tashira_number: "",
+  hodod_number: "",
   nationality: "",
   profession: "",
   expiry_date: null,
@@ -269,12 +271,30 @@ export function TransactionModal({
                 />
               </FormField>
 
-              <FormField label="رقم الإقامة" required>
+              <FormField label="رقم الإقامة">
                 <Input
                   placeholder="10 أرقام"
                   value={data.iqama_number}
                   maxLength={10}
                   onChange={(v) => handleInputChange("iqama_number", v)}
+                />
+              </FormField>
+
+              <FormField label="رقم التأشيرة">
+                <Input
+                  placeholder="10 أرقام"
+                  value={data.tashira_number}
+                  maxLength={10}
+                  onChange={(v) => handleInputChange("tashira_number", v)}
+                />
+              </FormField>
+
+              <FormField label="رقم الحدود">
+                <Input
+                  placeholder="10 أرقام"
+                  value={data.hodod_number}
+                  maxLength={10}
+                  onChange={(v) => handleInputChange("hodod_number", v)}
                 />
               </FormField>
 

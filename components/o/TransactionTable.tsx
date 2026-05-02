@@ -43,12 +43,19 @@ export default function TransactionTable({
             <th className="border-l border-slate-200 p-4 font-bold dark:border-slate-700/50">
               اسم المقيم
             </th>
-            <th className="border-l border-slate-200 p-4 font-bold dark:border-slate-700/50">
-              رقم الإقامة
-            </th>
 
             {showExpanded && (
               <>
+                <th className="border-l border-slate-200 p-4 font-bold dark:border-slate-700/50">
+                  رقم الإقامة
+                </th>
+                <th className="border-l border-slate-200 p-4 font-bold dark:border-slate-700/50">
+                  رقم الحدود
+                </th>
+                <th className="border-l border-slate-200 p-4 font-bold dark:border-slate-700/50">
+                  رقم التأشيرة
+                </th>
+
                 <th className="border-l border-slate-200 p-4 font-bold dark:border-slate-700/50">
                   الجنسية
                 </th>

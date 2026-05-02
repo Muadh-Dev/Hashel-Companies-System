@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { supabase } from "@/lib/supabase/supabaseSsrClient"
+import { toast } from "sonner"
+import { useUpsert } from "@/components/ExcelImporter/useUpsert"
 
 export type Company = {
   establishment_number: string
@@ -29,17 +31,19 @@ export type Transaction = {
   note: string
   created_at: string
   working: string
+  tashira_number: string
+  hodod_number: string
 }
 
 export function useTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [loading, setLoading] = useState(true)
+  const [fetching, setFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // ── جلب البيانات (محسن باستخدام useCallback) ──────────────────────────
   const fetchTransactions = useCallback(async () => {
-    setLoading(true)
+    setFetching(true)
     setError(null)
-
     try {
       const { data, error: fetchError } = await supabase
         .from("transactions")
@@ -49,11 +53,13 @@ export function useTransactions() {
       if (fetchError) throw fetchError
       setTransactions(data || [])
     } catch (err) {
-      console.error("خطأ في جلب البيانات:", err)
-      setError(err instanceof Error ? err.message : "حدث خطأ في جلب البيانات")
+      console.error("[useTransactions] fetch error:", err)
+      const msg = err instanceof Error ? err.message : "حدث خطأ في جلب البيانات"
+      setError(msg)
+      toast.error(msg, { position: "top-center" })
       setTransactions([])
     } finally {
-      setLoading(false)
+      setFetching(false)
     }
   }, [])
 
@@ -61,36 +67,40 @@ export function useTransactions() {
     fetchTransactions()
   }, [fetchTransactions])
 
+  // ── هوك الاستيراد الجنيريك ──────────────────────────────────────────
+  const { upsert, loading: upserting } = useUpsert<Transaction>({
+    table: "transactions",
+    conflictColumn: "id", // أو iqama_number حسب منطق قاعدة البيانات لديك
+    onSuccess: fetchTransactions,
+  })
+
+  // ── تحديثات محلية (Optimistic UI) ──────────────────────────────────
   const addTransactionLocal = useCallback((newTransaction: Transaction) => {
     setTransactions((prev) => [newTransaction, ...prev])
   }, [])
 
-  const removeTransactionLocal = useCallback((id: string) => {
+  const updateTransactionLocal = useCallback((updated: Transaction) => {
     setTransactions((prev) =>
-      prev.filter((transaction) => transaction.id !== id)
+      prev.map((t) => (t.id === updated.id ? updated : t))
     )
   }, [])
 
-  const updateTransactionLocal = useCallback(
-    (updatedTransaction: Transaction) => {
-      setTransactions((prev) =>
-        prev.map((transaction) =>
-          transaction.id === updatedTransaction.id
-            ? updatedTransaction
-            : transaction
-        )
-      )
-    },
-    []
-  )
+  const removeTransactionLocal = useCallback((id: string) => {
+    setTransactions((prev) => prev.filter((t) => t.id !== id))
+  }, [])
+
+  // ── الحسابات (استخدام useMemo) ────────────────────────────────────
+  const count = useMemo(() => transactions.length, [transactions])
 
   return {
     transactions,
-    loading,
+    loading: fetching || upserting, // دمج حالة التحميل والرفع
     error,
-    addTransactionLocal,
-    removeTransactionLocal,
-    updateTransactionLocal,
+    upsertTransactions: upsert, // إضافة دالة الاستيراد
     refetch: fetchTransactions,
+    addTransactionLocal,
+    updateTransactionLocal,
+    removeTransactionLocal,
+    count,
   }
 }

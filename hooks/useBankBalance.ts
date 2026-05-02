@@ -46,5 +46,7 @@ export function useBankBalance() {
     setTransactions((prev) => prev.filter((t) => t.id !== id))
   }
 
-  return { transactions, loading, addTransactionLocal, removeTransactionLocal }
+  const count = transactions.length
+
+  return { transactions, loading, addTransactionLocal, removeTransactionLocal, count}
 }

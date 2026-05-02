@@ -8,6 +8,8 @@ import {
   UserPlus,
   Banknote,
   Settings2,
+  DatabaseBackup,
+  ChevronLeft,
 } from "lucide-react"
 import ExportToExcel from "@/components/o/ExportToExcel"
 import ExportCompaniesToExcel from "@/components/c/ExportCompaniesConnectToExcel"
@@ -204,6 +206,39 @@ export default function MyPage() {
           </div>
           <div className="relative z-10 flex justify-end">
             <ExportBankBalanceToExcel />
+          </div>
+        </div>
+      )}
+      {/* ---------------- بطاقة مركز استيراد البيانات الشامل ---------------- */}
+      {hasPermission("importData") && ( // تأكد من امتلاك المستخدم لصلاحية الاستيراد العامة
+        <div className="group relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all hover:border-blue-500/30 hover:shadow-md sm:flex-row sm:items-center">
+          {/* تأثير الخلفية باللون الأزرق لتمييزه كمركز إدارة بيانات */}
+          <div className="absolute -top-6 -left-6 h-32 w-32 rounded-full bg-blue-500/5 transition-transform duration-500 group-hover:scale-150" />
+
+          <div className="relative z-10 flex items-center gap-4">
+            {/* أيقونة DatabaseBackup تعبر عن إدارة وتغذية البيانات */}
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10">
+              <DatabaseBackup className="h-7 w-7" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">
+                مركز استيراد البيانات
+              </h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                تحديث بيانات الشركات، الموظفين، والعمليات عبر ملفات Excel
+              </p>
+            </div>
+          </div>
+
+          <div className="relative z-10 flex justify-end">
+            {/* رابط لصفحة الاستيراد الموحدة */}
+            <a
+              href="/import"
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white transition-all hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95"
+            >
+              <span>ابدأ الاستيراد الآن</span>
+              <ChevronLeft className="h-4 w-4" />
+            </a>
           </div>
         </div>
       )}

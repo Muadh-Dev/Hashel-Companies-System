@@ -33,6 +33,10 @@ export default function HomePage() {
     addCompanyLocal,
     removeCompanyLocal,
     updateCompanyLocal,
+    count,
+    totalEmployees,
+    totalTransfers,
+    totalVisas,
   } = useCompanies()
 
   const processed = useMemo(() => {
@@ -180,6 +184,27 @@ export default function HomePage() {
           showExpanded={showExpanded}
           onToggleExpanded={() => setShowExpanded(!showExpanded)}
         />
+        <div className="mb-4 flex flex-wrap items-center gap-6 px-2 text-sm font-medium text-slate-600">
+          <div className="flex gap-1.5">
+            <span>إجمالي الشركات:</span>
+            <span className="text-blue-700">{count}</span>
+          </div>
+          <div className="h-4 w-px bg-slate-200" /> {/* خط فاصل */}
+          <div className="flex gap-1.5">
+            <span>إجمالي الموظفين:</span>
+            <span className="text-blue-700">{totalEmployees}</span>
+          </div>
+          <div className="h-4 w-px bg-slate-200" /> {/* خط فاصل */}
+          <div className="flex gap-1.5">
+            <span>نقل الكفالة:</span>
+            <span className="text-blue-700">{totalTransfers}</span>
+          </div>
+          <div className="h-4 w-px bg-slate-200" /> {/* خط فاصل */}
+          <div className="flex gap-1.5">
+            <span>التأشيرات:</span>
+            <span className="text-blue-700">{totalVisas}</span>
+          </div>
+        </div>
         <div className="relative min-h-100">
           {loading ? (
             <LoadingSpinner />

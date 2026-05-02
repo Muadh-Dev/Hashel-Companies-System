@@ -48,12 +48,18 @@ export default function TransactionRow({
       <td className="border-l border-slate-100 p-4 font-bold dark:border-slate-800">
         {item.resident_name}
       </td>
-      <td className="border-l border-slate-100 p-4 font-mono dark:border-slate-800">
-        {item.iqama_number}
-      </td>
 
       {showExpanded && (
         <>
+          <td className="border-l border-slate-100 p-4 font-mono dark:border-slate-800">
+            {item.iqama_number}
+          </td>
+          <td className="border-l border-slate-100 p-4 font-mono dark:border-slate-800">
+            {item.hodod_number}
+          </td>
+          <td className="border-l border-slate-100 p-4 font-mono dark:border-slate-800">
+            {item.tashira_number}
+          </td>
           <td className="border-l border-slate-100 p-4 dark:border-slate-800">
             {item.nationality}
           </td>
