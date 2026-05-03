@@ -5,6 +5,7 @@ import { TargetColumn } from "@/components/ExcelImporter/types"
 import { useCompanies } from "@/hooks/useCompanies"
 import { useConectCompanies } from "@/hooks/useConectCompanies"
 import { useTransactions } from "@/hooks/useTransactions"
+import { useState } from "react"
 
 // ─────────────────────────────
 // أعمدة الشركات
@@ -75,6 +76,7 @@ export default function ImportPage() {
   const { upsertCompanies } = useCompanies()
   const { upsertConectCompanies } = useConectCompanies()
   const { upsertTransactions } = useTransactions()
+  const [serviceType, setServiceType] = useState<string | null>(null)
 
   return (
     <div className="mx-auto max-w-7xl space-y-12 p-8" dir="rtl">
@@ -109,6 +111,29 @@ export default function ImportPage() {
         desc="إضافة أو تحديث بيانات المقيمين بناءً على رقم الإقامة"
         downloadUrl="/قالب-المعاملات.xlsx"
       >
+        {/* أزرار نوع الخدمة */}
+        <div className="mb-4 flex gap-2">
+          {["نقل كفالة", "تجديد سنوي", "إصدار تأشيرة"].map((type) => (
+            <button
+              key={type}
+              onClick={() =>
+                setServiceType((prev) => (prev === type ? null : type))
+              }
+              className={`rounded-lg border px-4 py-2 text-sm font-bold transition-all ${
+                serviceType === type
+                  ? "border-blue-600 bg-blue-600 text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-blue-300"
+              }`}
+            >
+              {type}
+            </button>
+          ))}
+          {serviceType && (
+            <span className="self-center text-xs text-slate-400">
+              سيُحقن في كل الصفوف تلقائياً
+            </span>
+          )}
+        </div>
         <ExcelImporter
           targetColumns={transactionColumns}
           onImport={(data, onProgress) => upsertTransactions(data, onProgress)}

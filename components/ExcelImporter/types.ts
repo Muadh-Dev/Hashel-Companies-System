@@ -17,6 +17,7 @@ export interface ExcelImporterProps {
   buttonLabel?: string
   /** الحد الأقصى للصفوف (الافتراضي: بلا حد) */
   maxRows?: number
+  presetFields?: Record<string, string | number>
 }
 
 export interface SheetData {

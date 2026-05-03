@@ -298,6 +298,7 @@ export default function ExcelImporter({
   onImport,
   buttonLabel = "استيراد البيانات",
   maxRows = Infinity,
+  presetFields = {},
 }: ExcelImporterProps) {
   const [sheets, setSheets] = useState<SheetData[]>([])
   const [activeSheetIndex, setActiveSheetIndex] = useState(0)
@@ -539,7 +540,7 @@ export default function ExcelImporter({
             const raw = row[m.excelColIndex]
             obj[m.targetKey] = col?.numeric ? Number(raw) || 0 : raw
           })
-          return obj
+          return { ...obj, ...presetFields }
         })
 
       // 4. استدعاء onImport مع callback للتقدم
