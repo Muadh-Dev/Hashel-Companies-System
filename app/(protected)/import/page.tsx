@@ -20,7 +20,6 @@ const companyColumns: TargetColumn[] = [
   { key: "company_owner", label: "مالك الشركة" },
   { key: "entity_type", label: "نوع الكيان" },
   { key: "crNumber", label: "رقم السجل التجاري", numeric: true },
-  { key: "cr_expiry_date", label: "تاريخ انتهاء السجل" },
   { key: "government_fees", label: "الرسوم الحكومية", numeric: true },
   {
     key: "commercial_register_fees",
@@ -30,7 +29,7 @@ const companyColumns: TargetColumn[] = [
   { key: "qiwa", label: "رسوم قوى", numeric: true },
   { key: "muqeem", label: "رسوم مقيم", numeric: true },
   { key: "exemption_amount", label: "مبلغ الإعفاء", numeric: true },
-  { key: "newspaper_price", label: "رسوم النشر", numeric: true },
+  { key: "newspaper_price", label: "رسوم النشر في الصحف", numeric: true },
   { key: "employees_count", label: "عدد الموظفين", numeric: true },
 ]
 
@@ -47,29 +46,25 @@ const companyConnectColumns: TargetColumn[] = [
 // ─────────────────────────────
 const transactionColumns: TargetColumn[] = [
   { key: "resident_name", label: "اسم المقيم", required: true },
-  { key: "iqama_number", label: "رقم الإقامة", required: true },
+  { key: "iqama_number", label: "رقم الإقامة" },
   {
     key: "unified_number_of_company",
-    label: "الرقم الموحد للشركة",
+    label: "رقم الشركة الموحد",
     required: true,
   },
   { key: "nationality", label: "الجنسية" },
   { key: "profession", label: "المهنة" },
-  { key: "service_type", label: "نوع الخدمة" },
-  { key: "expiry_date", label: "تاريخ الانتهاء" },
-  { key: "payment_date", label: "تاريخ السداد" },
+  { key: "phone_num", label: "الجوال", numeric: true },
   { key: "memo_number", label: "رقم المذكرة" },
   { key: "tashira_number", label: "رقم التأشيرة" },
   { key: "hodod_number", label: "رقم الحدود" },
-  { key: "working", label: "يعمل حالياً؟" },
-  { key: "work_permit", label: "رخصة العمل", numeric: true },
+  { key: "work_permit", label: "رخصة عمل", numeric: true },
   { key: "passports", label: "الجوازات", numeric: true },
-  { key: "medical_insurance", label: "التأمين الطبي", numeric: true },
+  { key: "medical_insurance", label: "تأمين طبي", numeric: true },
   { key: "transport_fees", label: "رسوم النقل", numeric: true },
   { key: "other_fees", label: "رسوم أخرى", numeric: true },
-  { key: "agreed_amount", label: "المبلغ المتفق", numeric: true },
+  { key: "agreed_amount", label: "المتفق عليه", numeric: true },
   { key: "received_amount", label: "المبلغ المستلم", numeric: true },
-  { key: "phone_num", label: "الجوال", numeric: true },
   { key: "note", label: "ملاحظات" },
 ]
 
@@ -86,6 +81,7 @@ export default function ImportPage() {
       <Section
         title="استيراد الشركات"
         desc="تحديث أو إضافة الشركات بناءً على الرقم الموحد"
+        downloadUrl="/قالب-الشركات.xlsx"
       >
         <ExcelImporter
           targetColumns={companyColumns}
@@ -94,7 +90,11 @@ export default function ImportPage() {
         />
       </Section>
 
-      <Section title="ربط الشركات" desc="إضافة روابط بين شركتين">
+      <Section
+        title="استيراد ربط الشركات"
+        desc="إضافة روابط بين شركتين"
+        downloadUrl="/قالب-الشركات-المرتبطة.xlsx"
+      >
         <ExcelImporter
           targetColumns={companyConnectColumns}
           onImport={(data, onProgress) =>
@@ -107,6 +107,7 @@ export default function ImportPage() {
       <Section
         title="استيراد المعاملات"
         desc="إضافة أو تحديث بيانات المقيمين بناءً على رقم الإقامة"
+        downloadUrl="/قالب-المعاملات.xlsx"
       >
         <ExcelImporter
           targetColumns={transactionColumns}
@@ -124,17 +125,51 @@ export default function ImportPage() {
 function Section({
   title,
   desc,
+  downloadUrl,
   children,
 }: {
   title: string
   desc: string
+  downloadUrl: string
   children: React.ReactNode
 }) {
   return (
-    <section>
-      <h2 className="text-xl font-bold text-slate-800">{title}</h2>
-      <p className="mt-1 mb-4 text-sm text-slate-500">{desc}</p>
-      {children}
+    <section className="rounded-lg border border-slate-100 bg-white p-6 shadow-sm">
+      {/* الجزء العلوي: النص والزر */}
+      <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        {/* جهة النصوص */}
+        <div className="flex-1">
+          <h2 className="text-xl font-bold tracking-tight text-slate-800">
+            {title}
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-slate-500">{desc}</p>
+        </div>
+
+        {/* جهة زر التحميل */}
+        <a
+          href={downloadUrl} // تأكد من وضع الملف في مجلد public
+          download
+          className="inline-flex items-center rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-slate-700 hover:shadow active:scale-95"
+        >
+          <svg
+            className="ml-2 h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            />
+          </svg>
+          تحميل قالب الإكسل
+        </a>
+      </div>
+
+      {/* الجزء السفلي: الأبناء */}
+      <div className="mt-4">{children}</div>
     </section>
   )
 }

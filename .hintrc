@@ -10,6 +10,14 @@
         "select-name": "off"
       }
     ],
-    "compat-api/css": "off"
+    "compat-api/css": "off",
+    "axe/aria": [
+      "default",
+      {
+        "aria-roles": "off"
+      }
+    ],
+    "button-type": "off",
+    "axe/name-role-value": "off"
   }
 }

@@ -71,7 +71,7 @@ export default function AppSidebar({
 
   return (
     <div
-      className="flex h-screen w-full overflow-hidden bg-amber-200 text-right dark:bg-slate-950"
+      className="flex h-screen w-full overflow-hidden text-right dark:bg-slate-950"
       dir="rtl"
     >
       {/* Mobile menu button */}
