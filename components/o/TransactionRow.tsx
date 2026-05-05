@@ -177,6 +177,21 @@ export default function TransactionRow({
           </td>
         </>
       )}
+
+      <td className="border-l border-slate-100 p-4 font-bold dark:border-slate-800">
+        {item.Wresident_name}
+      </td>
+      {showExpanded && (
+        <>
+          <td className="border-l border-slate-100 p-4 font-mono dark:border-slate-800">
+            {item.Wiqama_number}
+          </td>
+          <td className="border-l border-slate-100 p-4 dark:border-slate-800">
+            {item.Wphone_num}
+          </td>
+        </>
+      )}
+
       <td className="border-l border-slate-100 p-4 dark:border-slate-800">
         {item.note || "لاتوجد ملاحظة"}
       </td>

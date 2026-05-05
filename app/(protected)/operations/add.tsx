@@ -11,6 +11,8 @@ import {
   ChevronDown,
   AlertCircle,
   Pencil,
+  Ship,
+  User2,
 } from "lucide-react"
 import { addTransaction, updateTransaction } from "./upload" // 🆕 استيراد updateTransaction
 import { toast } from "sonner"
@@ -29,9 +31,12 @@ type TransactionInput = Omit<Transaction, "id" | "created_at" | "companies">
 // القيم الافتراضية مع تطابق الأنواع
 const getDefaultData = (): TransactionInput => ({
   resident_name: "",
+  Wresident_name: "",
   phone_num: 0,
+  Wphone_num: 0,
   payment_date: null,
   iqama_number: "",
+  Wiqama_number: "",
   tashira_number: "",
   hodod_number: "",
   nationality: "",
@@ -41,6 +46,7 @@ const getDefaultData = (): TransactionInput => ({
   service_type: SERVICE_TYPES[0], // القيمة الافتراضية من المصفوفة
   work_permit: 0,
   passports: 0,
+  iqama: 0,
   medical_insurance: 0,
   transport_fees: 0,
   other_fees: 0,
@@ -144,6 +150,7 @@ export function TransactionModal({
       Number(data.passports) +
       Number(data.medical_insurance) +
       Number(data.transport_fees) +
+      Number(data.iqama) +
       Number(data.other_fees)
     )
   }, [data])
@@ -335,6 +342,40 @@ export function TransactionModal({
             </div>
           </section>
 
+          {/* conected Info */}
+          <section className="space-y-6">
+            <SubHeader title="بيانات الوسيط" icon={User2} />
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              <FormField label="من طرف" required>
+                <Input
+                  placeholder="مثال: فلان الفلاني"
+                  value={data.Wresident_name}
+                  onChange={(v) => handleInputChange("Wresident_name", v)}
+                />
+              </FormField>
+
+              <FormField label="رقم الإقامة">
+                <Input
+                  placeholder="10 أرقام"
+                  value={data.Wiqama_number}
+                  maxLength={10}
+                  onChange={(v) => handleInputChange("Wiqama_number", v)}
+                />
+              </FormField>
+
+              <FormField label="رقم الهاتف">
+                <Input
+                  type="tel"
+                  placeholder="رقم الهاتف"
+                  value={data.Wphone_num || ""}
+                  onChange={(v) =>
+                    handleInputChange("Wphone_num", v === "" ? 0 : Number(v))
+                  }
+                />
+              </FormField>
+            </div>
+          </section>
+
           {/* Service Info */}
           <section className="space-y-6">
             <SubHeader title="بيانات الخدمة" icon={Briefcase} />
@@ -402,6 +443,13 @@ export function TransactionModal({
                   <NumberInput
                     value={data.medical_insurance}
                     onChange={(v) => handleInputChange("medical_insurance", v)}
+                  />
+                </FormField>
+
+                <FormField label="الإقامة">
+                  <NumberInput
+                    value={data.iqama}
+                    onChange={(v) => handleInputChange("iqama", v)}
                   />
                 </FormField>
 

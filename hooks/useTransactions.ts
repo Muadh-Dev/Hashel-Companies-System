@@ -11,7 +11,9 @@ export type Company = {
 export type Transaction = {
   id: string
   resident_name: string
+  Wresident_name: string
   iqama_number: string
+  Wiqama_number: string
   nationality: string
   profession: string
   expiry_date: string | null
@@ -23,6 +25,8 @@ export type Transaction = {
   work_permit: number
   passports: number
   phone_num: number
+  Wphone_num: number
+  iqama: number
   medical_insurance: number
   transport_fees: number
   other_fees: number

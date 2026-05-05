@@ -62,11 +62,15 @@ const transactionColumns: TargetColumn[] = [
   { key: "work_permit", label: "رخصة عمل", numeric: true },
   { key: "passports", label: "الجوازات", numeric: true },
   { key: "medical_insurance", label: "تأمين طبي", numeric: true },
+  { key: "iqama", label: "رسوم الإقامة", numeric: true },
   { key: "transport_fees", label: "رسوم النقل", numeric: true },
   { key: "other_fees", label: "رسوم أخرى", numeric: true },
   { key: "agreed_amount", label: "المتفق عليه", numeric: true },
   { key: "received_amount", label: "المبلغ المستلم", numeric: true },
   { key: "note", label: "ملاحظات" },
+  { key: "Wresident_name", label: "اسم الوسيط" },
+  { key: "Wiqama_number", label: "رقم إقامة الوسط" },
+  { key: "Wphone_num", label: "جوال الوسيط", numeric: true },
 ]
 
 // ─────────────────────────────

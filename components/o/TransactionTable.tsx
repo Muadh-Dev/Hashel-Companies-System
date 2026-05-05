@@ -137,6 +137,19 @@ export default function TransactionTable({
                 </th>
               </>
             )}
+            <th className="border-l border-slate-200 p-4 font-bold text-red-600 dark:border-slate-700/50 dark:text-red-400">
+              اسم الوسيط
+            </th>
+            {showExpanded && (
+              <>
+                <th className="border-l border-slate-200 p-4 font-bold dark:border-slate-700/50">
+                  رقم إقامة الوسيط
+                </th>
+                <th className="border-l border-slate-200 p-4 font-bold dark:border-slate-700/50">
+                  رقم جوال الوسيط
+                </th>
+              </>
+            )}
             <th className="border-l border-slate-200 p-4 font-bold dark:border-slate-700/50">
               ملاحظة
             </th>
