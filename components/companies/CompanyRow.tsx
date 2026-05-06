@@ -1,14 +1,7 @@
 "use client"
 
-import {
-  BanknoteArrowUp,
-  Edit,
-  MoreHorizontal,
-  Trash,
-  Check,
-} from "lucide-react"
+import { Edit, MoreHorizontal, Trash, Check } from "lucide-react"
 import { Company } from "@/hooks/useCompanies"
-import { toast } from "sonner"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +16,7 @@ type Props = {
   showExpanded: boolean
   onEditRequest: (item: Company) => void
   onDeleteRequest: (item: Company) => void
-  // التحديد المتعدد
+  // 👈 خصائص التحديد الجديدة
   isSelected: boolean
   onToggleSelect: (e: React.MouseEvent) => void
 }
@@ -43,7 +36,7 @@ export default function CompanyRow({
         isSelected ? "bg-blue-50/60 dark:bg-blue-900/20" : ""
       }`}
     >
-      {/* خلية التحديد */}
+      {/* 👈 خلية Checkbox للتحديد - هذه هي الجديدة */}
       <td
         className="cursor-pointer border-l border-slate-100 p-4 select-none dark:border-slate-800"
         onClick={onToggleSelect}
@@ -58,7 +51,7 @@ export default function CompanyRow({
           >
             {isSelected && (
               <Check
-                className="h-3 w-3 text-white transition-transform group-active:scale-75"
+                className="h-3 w-3 text-white transition-transform"
                 strokeWidth={3}
               />
             )}
@@ -97,7 +90,6 @@ export default function CompanyRow({
         {item.crNumber}
       </td>
 
-      {/* الأعمدة المخفية افتراضياً */}
       {showExpanded && (
         <>
           <td className="border-l border-slate-100 p-4 font-medium dark:border-slate-800">
@@ -165,16 +157,13 @@ export default function CompanyRow({
           <DropdownMenuContent align="end" className="w-40">
             <DropdownMenuLabel>الإجراءات</DropdownMenuLabel>
             <DropdownMenuSeparator />
-
             <DropdownMenuItem
               className="cursor-pointer"
               onClick={() => onEditRequest(item)}
             >
               <Edit className="mr-2 h-4 w-4" /> تعديل
             </DropdownMenuItem>
-
             <DropdownMenuSeparator />
-
             <DropdownMenuItem
               className="cursor-pointer text-red-600 focus:text-red-600"
               onClick={() => onDeleteRequest(item)}

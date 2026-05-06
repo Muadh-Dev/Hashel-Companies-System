@@ -41,7 +41,7 @@ export default function TransactionTableCompanies({
       <table className="border-collapse text-right whitespace-nowrap transition-all duration-300">
         <thead>
           <tr className="border-b border-slate-200 bg-slate-50 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
-            {/* عمود التحديد */}
+            {/* 👈 عمود Checkbox لتحديد الكل - هذا هو الجديد */}
             <th className="w-12 border-l border-slate-200 p-4 dark:border-slate-700/50">
               <div className="flex items-center justify-center">
                 <button
@@ -134,6 +134,7 @@ export default function TransactionTableCompanies({
               showExpanded={showExpanded}
               onEditRequest={onEditRequest}
               onDeleteRequest={onDeleteRequest}
+              // 👈 تمرير حالة التحديد لكل صف - هذا هو المهم
               isSelected={selectedIds.has(item.id)}
               onToggleSelect={(e) => onToggleSelect(item.id, e)}
             />
