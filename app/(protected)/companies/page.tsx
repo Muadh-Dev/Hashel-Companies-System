@@ -257,7 +257,7 @@ export default function HomePage() {
               >
                 {isDeleting ? "جاري الحذف..." : "حذف المحدد"}
               </button>
-              <button
+              {/* <button
                 onClick={() => toast.info("التصدير الجماعي قيد التطوير")}
                 className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:bg-emerald-700 active:scale-95"
               >
@@ -268,7 +268,7 @@ export default function HomePage() {
                 className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:bg-blue-700 active:scale-95"
               >
                 تحديث جماعي
-              </button>
+              </button> */}
             </div>
           </div>
         )}
