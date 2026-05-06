@@ -48,6 +48,8 @@ const companyConnectColumns: TargetColumn[] = [
 const transactionColumns: TargetColumn[] = [
   { key: "resident_name", label: "اسم المقيم", required: true },
   { key: "iqama_number", label: "رقم الإقامة" },
+  { key: "expiry_date", label: "تاريخ انتهاء الإقامة" },
+  { key: "created_at", label: "تاريخ العملية" },
   {
     key: "unified_number_of_company",
     label: "رقم الشركة الموحد",
@@ -69,7 +71,7 @@ const transactionColumns: TargetColumn[] = [
   { key: "received_amount", label: "المبلغ المستلم", numeric: true },
   { key: "note", label: "ملاحظات" },
   { key: "Wresident_name", label: "اسم الوسيط" },
-  { key: "Wiqama_number", label: "رقم إقامة الوسط" },
+  { key: "Wiqama_number", label: "رقم إقامة الوسيط" },
   { key: "Wphone_num", label: "جوال الوسيط", numeric: true },
 ]
 

@@ -1,7 +1,7 @@
 "use client"
 
-import { Calendar } from "lucide-react"
-import TransactionRow from "./CompanyRow"
+import { Calendar, Square, CheckSquare } from "lucide-react"
+import CompanyRow from "./CompanyRow"
 import { Company } from "@/hooks/useCompanies"
 
 type ProcessedCompany = Company & {
@@ -17,6 +17,10 @@ type Props = {
   setSortBy: (val: "date" | "expiry") => void
   onEditRequest: (item: Company) => void
   onDeleteRequest: (item: Company) => void
+  selectedIds: Set<string>
+  onToggleSelect: (id: string, event?: React.MouseEvent) => void
+  onToggleSelectAll: () => void
+  selectAll: boolean
 }
 
 export default function TransactionTableCompanies({
@@ -25,12 +29,35 @@ export default function TransactionTableCompanies({
   setSortBy,
   onEditRequest,
   onDeleteRequest,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
+  selectAll,
 }: Props) {
+  const allSelected = data.length > 0 && selectAll
+
   return (
     <div className="overflow-x-auto rounded-[2rem] border border-slate-200 bg-white/50 shadow-xl backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/50">
       <table className="border-collapse text-right whitespace-nowrap transition-all duration-300">
         <thead>
           <tr className="border-b border-slate-200 bg-slate-50 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
+            {/* عمود التحديد */}
+            <th className="w-12 border-l border-slate-200 p-4 dark:border-slate-700/50">
+              <div className="flex items-center justify-center">
+                <button
+                  onClick={onToggleSelectAll}
+                  className="group relative flex h-5 w-5 items-center justify-center rounded-md border-2 border-slate-300 transition-all hover:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none dark:border-slate-600 dark:hover:border-blue-400"
+                  aria-label={allSelected ? "إلغاء تحديد الكل" : "تحديد الكل"}
+                >
+                  {allSelected ? (
+                    <CheckSquare className="h-4 w-4 text-blue-600 transition-transform group-active:scale-90 dark:text-blue-400" />
+                  ) : (
+                    <Square className="h-4 w-4 text-slate-400 transition-transform group-active:scale-90 dark:text-slate-500" />
+                  )}
+                </button>
+              </div>
+            </th>
+
             <th className="border-l border-slate-200 p-4 font-bold dark:border-slate-700/50">
               <div
                 className="flex cursor-pointer items-center gap-2"
@@ -101,12 +128,14 @@ export default function TransactionTableCompanies({
         </thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
           {data.map((item) => (
-            <TransactionRow
+            <CompanyRow
               key={item.id}
               item={item}
               showExpanded={showExpanded}
               onEditRequest={onEditRequest}
               onDeleteRequest={onDeleteRequest}
+              isSelected={selectedIds.has(item.id)}
+              onToggleSelect={(e) => onToggleSelect(item.id, e)}
             />
           ))}
         </tbody>

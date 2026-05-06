@@ -1,7 +1,13 @@
 "use client"
 
-import { BanknoteArrowUp, Edit, MoreHorizontal, Trash } from "lucide-react"
-import { Company } from "@/hooks/useCompanies" // تأكد أنك غيرت اسم التصدير في الهوك أيضاً
+import {
+  BanknoteArrowUp,
+  Edit,
+  MoreHorizontal,
+  Trash,
+  Check,
+} from "lucide-react"
+import { Company } from "@/hooks/useCompanies"
 import { toast } from "sonner"
 import {
   DropdownMenu,
@@ -17,6 +23,9 @@ type Props = {
   showExpanded: boolean
   onEditRequest: (item: Company) => void
   onDeleteRequest: (item: Company) => void
+  // التحديد المتعدد
+  isSelected: boolean
+  onToggleSelect: (e: React.MouseEvent) => void
 }
 
 export default function CompanyRow({
@@ -24,9 +33,39 @@ export default function CompanyRow({
   showExpanded,
   onEditRequest,
   onDeleteRequest,
+  isSelected,
+  onToggleSelect,
 }: Props) {
   return (
-    <tr className="text-sm transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
+    <tr
+      data-id={item.id}
+      className={`text-sm transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/30 ${
+        isSelected ? "bg-blue-50/60 dark:bg-blue-900/20" : ""
+      }`}
+    >
+      {/* خلية التحديد */}
+      <td
+        className="cursor-pointer border-l border-slate-100 p-4 select-none dark:border-slate-800"
+        onClick={onToggleSelect}
+      >
+        <div className="flex items-center justify-center">
+          <div
+            className={`flex h-5 w-5 items-center justify-center rounded-md border-2 transition-all duration-200 ${
+              isSelected
+                ? "border-blue-600 bg-blue-600 dark:border-blue-400 dark:bg-blue-500"
+                : "border-slate-300 bg-white hover:border-blue-400 dark:border-slate-600 dark:bg-slate-800 dark:hover:border-blue-400"
+            }`}
+          >
+            {isSelected && (
+              <Check
+                className="h-3 w-3 text-white transition-transform group-active:scale-75"
+                strokeWidth={3}
+              />
+            )}
+          </div>
+        </div>
+      </td>
+
       {/* الرقم الموحد */}
       <td className="border-l border-slate-100 p-4 dark:border-slate-800">
         {item.unified_number}
@@ -117,7 +156,6 @@ export default function CompanyRow({
       {/* إجراءات */}
       <td className="sticky left-0 z-10 border-r border-slate-100 bg-white p-4 text-center shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)] dark:border-slate-800 dark:bg-slate-900">
         <DropdownMenu dir="rtl">
-          {/* نستخدم asChild لتجنب تداخل أزرار داخل بعضها البعض */}
           <DropdownMenuTrigger asChild>
             <button className="rounded-lg p-2 text-slate-400 transition-colors outline-none hover:bg-slate-200 dark:hover:bg-slate-700">
               <MoreHorizontal className="h-5 w-5" />

@@ -8,21 +8,81 @@ interface UseUpsertOptions {
   table: string
   conflictColumn: string
   stripFields?: string[]
+  dateFields?: string[] // حقول التاريخ التي تحتاج معالجة خاصة
   onSuccess?: () => void | Promise<void>
 }
 
-// تعديل حجم الدفعة حسب عدد الأعمدة وحجم البيانات (500 رقم آمن جداً)
 const CHUNK_SIZE = 500
+
+/**
+ * دالة داخلية لتحويل قيم التاريخ القادمة من إكسل (بدون مكتبات خارجية)
+ */
+const parseExcelDate = (value: any): string | null => {
+  if (value === undefined || value === null || value === "") return null
+
+  // 1. إذا كانت القيمة كائن تاريخ (JS Date Object)
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) return null
+    return value.toISOString().split("T")[0]
+  }
+
+  // 2. إذا كان الرقم التسلسلي للإكسل قادماً على شكل نص نحوله لرقم
+  const numValue =
+    typeof value === "string" && /^\d{5}$/.test(value.trim())
+      ? Number(value)
+      : value
+
+  // 3. التعامل مع رقم إكسل التسلسلي (Serial Number)
+  if (typeof numValue === "number") {
+    // 25569 هو فارق الأيام بين إكسل وجافاسكريبت
+    const date = new Date((numValue - 25569) * 86400 * 1000)
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().split("T")[0]
+    }
+    return null
+  }
+
+  // 4. التعامل مع النصوص بالجافاسكريبت النقي (Regex Parsing)
+  if (typeof value === "string") {
+    const str = value.trim()
+
+    // محاولة التقاط صيغة DD/MM/YYYY أو DD-MM-YYYY الشائعة عربياً
+    const matchDDMMYYYY = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/)
+    if (matchDDMMYYYY) {
+      const day = matchDDMMYYYY[1].padStart(2, "0")
+      const month = matchDDMMYYYY[2].padStart(2, "0")
+      const year = matchDDMMYYYY[3]
+      return `${year}-${month}-${day}`
+    }
+
+    // محاولة التقاط صيغة YYYY/MM/DD أو YYYY-MM-DD
+    const matchYYYYMMDD = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/)
+    if (matchYYYYMMDD) {
+      const year = matchYYYYMMDD[1]
+      const month = matchYYYYMMDD[2].padStart(2, "0")
+      const day = matchYYYYMMDD[3].padStart(2, "0")
+      return `${year}-${month}-${day}`
+    }
+
+    // محاولة أخيرة عبر الجافاسكريبت الافتراضي (للتنسيقات المدعومة عالمياً)
+    const fallbackDate = new Date(str)
+    if (!isNaN(fallbackDate.getTime())) {
+      return fallbackDate.toISOString().split("T")[0]
+    }
+  }
+
+  return null
+}
 
 export function useUpsert<T extends Record<string, any>>({
   table,
   conflictColumn,
   stripFields = ["id", "created_at"],
+  dateFields = ["expiry_date", "created_at", "transaction_date"], // افتراضياً
   onSuccess,
 }: UseUpsertOptions) {
   const [loading, setLoading] = useState(false)
 
-  // أضفنا onProgress كمعامل ثانٍ هنا ليتوافق مع ما يرسله ExcelImporter
   const upsert = useCallback(
     async (
       data: Partial<T>[],
@@ -35,16 +95,26 @@ export function useUpsert<T extends Record<string, any>>({
 
       setLoading(true)
       try {
+        // خط الدفاع الثاني: تنظيف البيانات ومعالجة التواريخ
         const cleanData = data.map((row) => {
           const cleaned = { ...row }
+
+          // 1. حذف الحقول غير المرغوب بها
           for (const field of stripFields) delete cleaned[field]
+
+          // 2. معالجة حقول التاريخ المحددة
+          for (const key in cleaned) {
+            if (dateFields.includes(key)) {
+              cleaned[key] = parseExcelDate(cleaned[key]) as any
+            }
+          }
+
           return cleaned
         })
 
         const totalRows = cleanData.length
         let processedRows = 0
 
-        // تقسيم البيانات وإرسالها على دفعات
         for (let i = 0; i < totalRows; i += CHUNK_SIZE) {
           const chunk = cleanData.slice(i, i + CHUNK_SIZE)
 
@@ -61,7 +131,6 @@ export function useUpsert<T extends Record<string, any>>({
             throw error
           }
 
-          // تحديث شريط التقدم الفعلي
           processedRows += chunk.length
           onProgress?.(processedRows, totalRows)
         }
@@ -75,7 +144,7 @@ export function useUpsert<T extends Record<string, any>>({
         setLoading(false)
       }
     },
-    [table, conflictColumn, stripFields, onSuccess]
+    [table, conflictColumn, stripFields, dateFields, onSuccess]
   )
 
   return { upsert, loading }

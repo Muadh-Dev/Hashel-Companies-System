@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { useCompanies, Company } from "@/hooks/useCompanies" // النسخة المحدثة
+import { useCompanies, Company } from "@/hooks/useCompanies"
+import { useMultiSelect } from "@/hooks/useMultiSelect" // 👈 استيراد الـ Hook
 import Header from "@/components/Header"
 import SearchAndFilters from "@/components/companies/SearchAndFiltersCompany"
 import TransactionTableCompanies from "@/components/companies/CompanyTable"
 import LoadingSpinner from "@/components/o/LoadingSpinner"
 import EmptyState from "@/components/o/EmptyState"
-import { CompanyModal } from "./add" // أو المسار المناسب
+import { CompanyModal } from "./add"
 import { deleteCompany } from "./upload"
 import DeleteConfirmModal from "@/components/DeleteConfirmModal"
 import { toast } from "sonner"
@@ -79,6 +80,40 @@ export default function HomePage() {
     })
   }, [processed, searchQuery, activeTab, sortBy, sortOrder])
 
+  // 👈 استخدام الـ Hook (3 أسطر فقط بدلاً من 50+ سطر)
+  const {
+    selectedIds,
+    selectAll,
+    toggleItem,
+    toggleAll,
+    clearSelection,
+    selectedCount,
+    selectedArray,
+  } = useMultiSelect({
+    data: filteredData,
+    getItemId: (item) => item.id,
+    resetDependencies: [searchQuery, activeTab],
+  })
+
+  // حذف جماعي
+  const handleBulkDelete = async () => {
+    if (selectedCount === 0) return
+    if (!confirm(`هل أنت متأكد من حذف ${selectedCount} شركة؟`)) return
+
+    setIsDeleting(true)
+    try {
+      const deletePromises = selectedArray.map((id) => deleteCompany(id))
+      await Promise.all(deletePromises)
+      selectedArray.forEach((id) => removeCompanyLocal(id))
+      clearSelection()
+      toast.success(`تم حذف ${selectedCount} شركة بنجاح`)
+    } catch {
+      toast.error("فشل حذف بعض الشركات")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   // === Handlers ===
   const handleAddNew = () => {
     setEditingCompany(null)
@@ -131,16 +166,12 @@ export default function HomePage() {
         dir="rtl"
       >
         <div className="relative w-full max-w-sm">
-          {/* تأثير هالة ضوئية خلفية ناعمة */}
           <div className="absolute -inset-4 rounded-full bg-rose-500/5 blur-3xl"></div>
-
           <div className="relative flex flex-col items-center space-y-5 rounded-3xl border border-border/50 bg-card/60 p-10 text-center shadow-2xl backdrop-blur-md">
-            {/* أيقونة بتصميم زجاجي Glassmorphism */}
             <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-rose-50 to-rose-100 shadow-inner">
               <ShieldAlert className="h-10 w-10 text-rose-500/80" />
               <div className="absolute -top-1 -right-1 h-4 w-4 animate-pulse rounded-full bg-rose-500/20"></div>
             </div>
-
             <div className="space-y-2">
               <h3 className="text-xl font-bold tracking-tight text-foreground/90">
                 دخول غير مصرح به
@@ -149,8 +180,6 @@ export default function HomePage() {
                 عذراً، لا تملك الصلاحيات الكافية لعرض محتويات هذه الصفحة حالياً.
               </p>
             </div>
-
-            {/* خط زخرفي بسيط لإنهاء التصميم */}
             <div className="h-1 w-12 rounded-full bg-linear-to-r from-transparent via-rose-200 to-transparent"></div>
           </div>
         </div>
@@ -189,22 +218,61 @@ export default function HomePage() {
             <span>إجمالي الشركات:</span>
             <span className="text-blue-700">{count}</span>
           </div>
-          <div className="h-4 w-px bg-slate-200" /> {/* خط فاصل */}
+          <div className="h-4 w-px bg-slate-200" />
           <div className="flex gap-1.5">
             <span>إجمالي الموظفين:</span>
             <span className="text-blue-700">{totalEmployees}</span>
           </div>
-          <div className="h-4 w-px bg-slate-200" /> {/* خط فاصل */}
+          <div className="h-4 w-px bg-slate-200" />
           <div className="flex gap-1.5">
             <span>نقل الكفالة:</span>
             <span className="text-blue-700">{totalTransfers}</span>
           </div>
-          <div className="h-4 w-px bg-slate-200" /> {/* خط فاصل */}
+          <div className="h-4 w-px bg-slate-200" />
           <div className="flex gap-1.5">
             <span>التأشيرات:</span>
             <span className="text-blue-700">{totalVisas}</span>
           </div>
         </div>
+
+        {/* شريط الإجراءات الجماعية */}
+        {selectedCount > 0 && (
+          <div className="mb-4 flex items-center justify-between rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 shadow-lg backdrop-blur-sm dark:border-blue-800 dark:from-blue-950/40 dark:to-indigo-950/40">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                تم تحديد <span className="text-base">{selectedCount}</span> شركة
+              </span>
+              <button
+                onClick={clearSelection}
+                className="text-xs text-blue-600 underline hover:text-blue-800 dark:text-blue-400"
+              >
+                إلغاء التحديد
+              </button>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+                className="rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:bg-rose-700 active:scale-95 disabled:opacity-50"
+              >
+                {isDeleting ? "جاري الحذف..." : "حذف المحدد"}
+              </button>
+              <button
+                onClick={() => toast.info("التصدير الجماعي قيد التطوير")}
+                className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:bg-emerald-700 active:scale-95"
+              >
+                تصدير CSV
+              </button>
+              <button
+                onClick={() => toast.info("التحديث الجماعي قيد التطوير")}
+                className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:bg-blue-700 active:scale-95"
+              >
+                تحديث جماعي
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="relative min-h-100">
           {loading ? (
             <LoadingSpinner />
@@ -216,6 +284,10 @@ export default function HomePage() {
               setSortBy={setSortBy}
               onEditRequest={handleEdit}
               onDeleteRequest={handleDeleteRequest}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleItem}
+              onToggleSelectAll={toggleAll}
+              selectAll={selectAll}
             />
           ) : (
             <EmptyState />
