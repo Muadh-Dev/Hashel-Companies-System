@@ -29,14 +29,19 @@ export function useMultiSelect<T>({
         const next = new Set(prev)
 
         if (event?.shiftKey && lastClickedRef.current) {
+          console.log("Shift+Click detected!") // 👈 للتجربة
           const ids = data.map(getItemId)
           const startIdx = ids.indexOf(lastClickedRef.current)
           const endIdx = ids.indexOf(id)
+
+          console.log("Range:", startIdx, "to", endIdx)
 
           if (startIdx !== -1 && endIdx !== -1) {
             const [from, to] =
               startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx]
             const range = ids.slice(from, to + 1)
+
+            console.log("Selecting range:", range) // 👈 للتجربة
 
             if (next.has(id)) {
               range.forEach((r) => next.delete(r))
@@ -47,8 +52,10 @@ export function useMultiSelect<T>({
         } else {
           if (next.has(id)) {
             next.delete(id)
+            console.log("Removed:", id) // 👈 للتجربة
           } else {
             next.add(id)
+            console.log("Added:", id) // 👈 للتجربة
           }
         }
 
