@@ -177,7 +177,7 @@ export default function OperationsContent() {
   // حذف جماعي
   const handleBulkDelete = async () => {
     if (selectedCount === 0) return
-    if (!confirm(`هل أنت متأكد من حذف ${selectedCount} شركة؟`)) return
+    if (!confirm(`هل أنت متأكد من حذف ${selectedCount} معاملة`)) return
 
     setIsDeleting(true)
     try {
@@ -185,9 +185,9 @@ export default function OperationsContent() {
       await Promise.all(deletePromises)
       selectedArray.forEach((id) => removeTransactionLocal(id))
       clearSelection()
-      toast.success(`تم حذف ${selectedCount} شركة بنجاح`)
+      toast.success(`تم حذف ${selectedCount} معاملة بنجاح`)
     } catch {
-      toast.error("فشل حذف بعض الشركات")
+      toast.error("فشل حذف بعض المعاملات")
     } finally {
       setIsDeleting(false)
     }
@@ -270,7 +270,8 @@ export default function OperationsContent() {
           <div className="mb-4 flex items-center justify-between rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 shadow-lg backdrop-blur-sm dark:border-blue-800 dark:from-blue-950/40 dark:to-indigo-950/40">
             <div className="flex items-center gap-3">
               <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                تم تحديد <span className="text-base">{selectedCount}</span> شركة
+                تم تحديد <span className="text-base">{selectedCount}</span>{" "}
+                معاملة
               </span>
               <button
                 onClick={clearSelection}
