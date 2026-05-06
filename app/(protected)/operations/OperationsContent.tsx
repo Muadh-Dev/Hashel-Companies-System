@@ -17,6 +17,7 @@ import { toast } from "sonner"
 import AddPaymentModal from "@/components/o/AddPaymentDialog"
 import { useAuth } from "@/context/AuthContext"
 import { ShieldAlert } from "lucide-react"
+import { useMultiSelect } from "@/hooks/useMultiSelect"
 
 export default function OperationsContent() {
   const searchParams = useSearchParams()
@@ -159,6 +160,39 @@ export default function OperationsContent() {
     })
   }, [processed, searchQuery, activeTab, sortBy, sortOrder])
 
+  const {
+    selectedIds,
+    selectAll,
+    toggleItem,
+    toggleAll,
+    clearSelection,
+    selectedCount,
+    selectedArray,
+  } = useMultiSelect({
+    data: filteredData,
+    getItemId: (item) => item.id,
+    resetDependencies: [searchQuery, activeTab],
+  })
+
+  // حذف جماعي
+  const handleBulkDelete = async () => {
+    if (selectedCount === 0) return
+    if (!confirm(`هل أنت متأكد من حذف ${selectedCount} شركة؟`)) return
+
+    setIsDeleting(true)
+    try {
+      const deletePromises = selectedArray.map((id) => deleteTransaction(id))
+      await Promise.all(deletePromises)
+      selectedArray.forEach((id) => removeTransactionLocal(id))
+      clearSelection()
+      toast.success(`تم حذف ${selectedCount} شركة بنجاح`)
+    } catch {
+      toast.error("فشل حذف بعض الشركات")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const isPowerUser = user?.role === "مدير" || user?.role === "مشرف"
 
   const hasRequiredPermissions =
@@ -231,6 +265,44 @@ export default function OperationsContent() {
           permissions={user?.permissions}
         />
 
+        {/* شريط الإجراءات الجماعية */}
+        {selectedCount > 0 && (
+          <div className="mb-4 flex items-center justify-between rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 shadow-lg backdrop-blur-sm dark:border-blue-800 dark:from-blue-950/40 dark:to-indigo-950/40">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                تم تحديد <span className="text-base">{selectedCount}</span> شركة
+              </span>
+              <button
+                onClick={clearSelection}
+                className="text-xs text-blue-600 underline hover:text-blue-800 dark:text-blue-400"
+              >
+                إلغاء التحديد
+              </button>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+                className="rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:bg-rose-700 active:scale-95 disabled:opacity-50"
+              >
+                {isDeleting ? "جاري الحذف..." : "حذف المحدد"}
+              </button>
+              {/* <button
+                onClick={() => toast.info("التصدير الجماعي قيد التطوير")}
+                className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:bg-emerald-700 active:scale-95"
+              >
+                تصدير CSV
+              </button>
+              <button
+                onClick={() => toast.info("التحديث الجماعي قيد التطوير")}
+                className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:bg-blue-700 active:scale-95"
+              >
+                تحديث جماعي
+              </button> */}
+            </div>
+          </div>
+        )}
+
         <div className="relative min-h-100">
           {loading ? (
             <LoadingSpinner />
@@ -243,6 +315,10 @@ export default function OperationsContent() {
               onDeleteRequest={(item) => setItemToDelete(item)}
               onEditRequest={handleEditRequest} // 🆕
               onAddPaymentRequest={(item) => setAddPaymentItem(item)}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleItem}
+              onToggleSelectAll={toggleAll}
+              selectAll={selectAll}
             />
           ) : (
             <EmptyState />

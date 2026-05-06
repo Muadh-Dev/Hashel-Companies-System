@@ -13,62 +13,52 @@ export function useMultiSelect<T>({
 }: UseMultiSelectOptions<T>) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [selectAll, setSelectAll] = useState(false)
-  const lastClickedRef = useRef<string | null>(null)
+  // يحفظ آخر id تم النقر عليه (بدون shift)
+  const lastClickedId = useRef<string | null>(null)
 
-  // مسح التحديد عند تغيير المعايير
   useEffect(() => {
     setSelectedIds(new Set())
     setSelectAll(false)
-    lastClickedRef.current = null
-  }, [...resetDependencies])
+    lastClickedId.current = null
+  }, resetDependencies)
 
-  // تحديد عنصر واحد مع دعم Shift+Click
   const toggleItem = useCallback(
     (id: string, event?: React.MouseEvent) => {
+      const shiftKey = event?.shiftKey ?? false
+
       setSelectedIds((prev) => {
         const next = new Set(prev)
 
-        if (event?.shiftKey && lastClickedRef.current) {
-          console.log("Shift+Click detected!") // 👈 للتجربة
+        if (shiftKey && lastClickedId.current && lastClickedId.current !== id) {
+          // نطاق بين آخر id وهذا id
           const ids = data.map(getItemId)
-          const startIdx = ids.indexOf(lastClickedRef.current)
-          const endIdx = ids.indexOf(id)
-
-          console.log("Range:", startIdx, "to", endIdx)
-
-          if (startIdx !== -1 && endIdx !== -1) {
-            const [from, to] =
-              startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx]
-            const range = ids.slice(from, to + 1)
-
-            console.log("Selecting range:", range) // 👈 للتجربة
-
-            if (next.has(id)) {
-              range.forEach((r) => next.delete(r))
-            } else {
-              range.forEach((r) => next.add(r))
+          const start = ids.indexOf(lastClickedId.current)
+          const end = ids.indexOf(id)
+          if (start !== -1 && end !== -1) {
+            const from = Math.min(start, end)
+            const to = Math.max(start, end)
+            // نضيف النطاق كاملاً (إذا أردت السلوك البديل: إلغاء النطاق إذا كان id محدداً، لكن سألتزم بسلوك ويندوز: shift+click يضيف النطاق)
+            for (let i = from; i <= to; i++) {
+              next.add(ids[i])
             }
           }
         } else {
+          // نقر عادي: toggle واحد
           if (next.has(id)) {
             next.delete(id)
-            console.log("Removed:", id) // 👈 للتجربة
           } else {
             next.add(id)
-            console.log("Added:", id) // 👈 للتجربة
           }
+          lastClickedId.current = id // نسجل آخر نقرة فقط للنقرات الفردية
         }
 
         setSelectAll(next.size === data.length && data.length > 0)
         return next
       })
-
-      lastClickedRef.current = id
     },
     [data, getItemId]
   )
 
-  // تحديد/إلغاء الكل
   const toggleAll = useCallback(() => {
     if (selectAll) {
       setSelectedIds(new Set())
@@ -79,20 +69,11 @@ export function useMultiSelect<T>({
     }
   }, [selectAll, data, getItemId])
 
-  // مسح التحديد
   const clearSelection = useCallback(() => {
     setSelectedIds(new Set())
     setSelectAll(false)
-    lastClickedRef.current = null
+    lastClickedId.current = null
   }, [])
-
-  // التحقق إذا كان العنصر محدداً
-  const isSelected = useCallback(
-    (id: string) => {
-      return selectedIds.has(id)
-    },
-    [selectedIds]
-  )
 
   return {
     selectedIds,
@@ -100,7 +81,6 @@ export function useMultiSelect<T>({
     toggleItem,
     toggleAll,
     clearSelection,
-    isSelected,
     selectedCount: selectedIds.size,
     selectedArray: Array.from(selectedIds),
   }

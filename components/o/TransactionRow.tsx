@@ -3,6 +3,7 @@
 import {
   Banknote,
   BanknoteArrowUp,
+  Check,
   DollarSign,
   Edit,
   Eye,
@@ -19,6 +20,7 @@ import {
   DropdownMenuItem,
 } from "../ui/dropdown-menu"
 import { toast } from "sonner"
+import { CheckboxCell } from "../CheckboxCell"
 
 type Props = {
   item: Transaction & {
@@ -31,6 +33,8 @@ type Props = {
   onDeleteRequest: (item: Transaction) => void
   onEditRequest: (item: Transaction) => void
   onAddPaymentRequest: (item: Transaction) => void
+  isSelected: boolean
+  onToggleSelect: (e: React.MouseEvent) => void
 }
 
 export default function TransactionRow({
@@ -39,9 +43,14 @@ export default function TransactionRow({
   onDeleteRequest,
   onEditRequest,
   onAddPaymentRequest,
+  isSelected,
+  onToggleSelect,
 }: Props) {
   return (
     <tr className="text-sm transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
+      <td className="cursor-pointer" onClick={onToggleSelect}>
+        <CheckboxCell isSelected={isSelected} onToggle={onToggleSelect} />
+      </td>
       <td className="border-l border-slate-100 p-4 dark:border-slate-800">
         {item.operationDate}
       </td>

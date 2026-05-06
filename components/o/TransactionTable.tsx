@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Hourglass } from "lucide-react"
+import { Calendar, CheckSquare, Hourglass, Square } from "lucide-react"
 import TransactionRow from "./TransactionRow"
 import { useMemo } from "react"
 import { Transaction } from "@/hooks/useTransactions"
@@ -17,6 +17,10 @@ type Props = {
   setSortBy: (val: "date" | "expiry") => void
   onEditRequest: (item: Transaction) => void
   onAddPaymentRequest: (item: Transaction) => void
+  selectedIds: Set<string>
+  onToggleSelect: (id: string, e: React.MouseEvent) => void
+  onToggleSelectAll: () => void
+  selectAll: boolean
 }
 
 export default function TransactionTable({
@@ -26,12 +30,21 @@ export default function TransactionTable({
   setSortBy,
   onEditRequest,
   onAddPaymentRequest,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
+  selectAll,
 }: Props) {
   return (
     <div className="overflow-x-auto rounded-[2rem] border border-slate-200 bg-white/50 shadow-xl backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/50">
       <table className="border-collapse text-right whitespace-nowrap transition-all duration-300">
         <thead>
           <tr className="border-b border-slate-200 bg-slate-50 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
+            <th className="w-12 p-4">
+              <button onClick={onToggleSelectAll}>
+                {selectAll ? <CheckSquare /> : <Square />}
+              </button>
+            </th>
             <th className="border-l border-slate-200 p-4 font-bold dark:border-slate-700/50">
               <div
                 className="flex cursor-pointer items-center gap-2"
@@ -167,6 +180,8 @@ export default function TransactionTable({
               onDeleteRequest={onDeleteRequest}
               onEditRequest={onEditRequest}
               onAddPaymentRequest={onAddPaymentRequest}
+              isSelected={selectedIds.has(item.id)}
+              onToggleSelect={(e) => onToggleSelect(item.id, e)}
             />
           ))}
         </tbody>
