@@ -346,7 +346,7 @@ export function TransactionModal({
           <section className="space-y-6">
             <SubHeader title="بيانات الوسيط" icon={User2} />
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-              <FormField label="من طرف" required>
+              <FormField label="من طرف">
                 <Input
                   placeholder="مثال: فلان الفلاني"
                   value={data.Wresident_name}

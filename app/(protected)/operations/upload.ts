@@ -14,7 +14,10 @@ export async function addTransaction(
     throw new Error("اسم المقيم مطلوب")
   }
 
-  if (!data.iqama_number || !/^\d{10}$/.test(data.iqama_number)) {
+  if (
+    !data.iqama_number ||
+    (!/^\d{10}$/.test(data.iqama_number) && data.iqama_number !== "")
+  ) {
     throw new Error("رقم الإقامة يجب أن يكون 10 أرقام")
   }
 

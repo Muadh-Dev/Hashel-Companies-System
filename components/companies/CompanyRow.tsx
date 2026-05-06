@@ -38,12 +38,8 @@ export default function CompanyRow({
       }`}
     >
       {/* 👈 خلية Checkbox للتحديد - هذه هي الجديدة */}
-      <td
-        className="cursor-pointer border-l border-slate-100 p-4 select-none dark:border-slate-800"
-        onClick={onToggleSelect}
-      >
-        <CheckboxCell isSelected={isSelected} onToggle={onToggleSelect} />
-      </td>
+
+      <CheckboxCell isSelected={isSelected} onToggle={onToggleSelect} />
 
       {/* الرقم الموحد */}
       <td className="border-l border-slate-100 p-4 dark:border-slate-800">

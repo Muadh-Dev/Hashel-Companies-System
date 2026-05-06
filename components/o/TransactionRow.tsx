@@ -48,9 +48,8 @@ export default function TransactionRow({
 }: Props) {
   return (
     <tr className="text-sm transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
-      <td className="cursor-pointer" onClick={onToggleSelect}>
-        <CheckboxCell isSelected={isSelected} onToggle={onToggleSelect} />
-      </td>
+      <CheckboxCell isSelected={isSelected} onToggle={onToggleSelect} />
+
       <td className="border-l border-slate-100 p-4 dark:border-slate-800">
         {item.operationDate}
       </td>
