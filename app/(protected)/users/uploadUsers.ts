@@ -17,9 +17,28 @@ export type UserInput = {
   }
 }
 
-export async function addUser(data: UserInput): Promise<User> {
+export async function createUserWithPhone(
+  data: UserInput & { password: string }
+): Promise<User> {
   if (!data.name?.trim()) throw new Error("اسم المستخدم مطلوب")
-  if (!data.email?.trim()) throw new Error("الإيميل مطلوب")
+  if (!data.email?.trim()) throw new Error("رقم الجوال مطلوب")
+  if (!data.password?.trim()) throw new Error("كلمة المرور مطلوبة")
+
+  const { data: authData, error: authError } =
+    await supabase.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+    })
+
+  if (authError) {
+    if (authError.message?.includes("already been registered")) {
+      throw new Error("هذا الرقم مسجل بالفعل")
+    }
+    throw new Error("فشل إنشاء الحساب: " + authError.message)
+  }
+
+  if (!authData.user) throw new Error("فشل إنشاء الحساب")
 
   const insertData = {
     name: data.name,
@@ -27,19 +46,25 @@ export async function addUser(data: UserInput): Promise<User> {
     is_admin: data.is_admin ?? false,
     role: data.role ?? "مخصص",
     permissions: data.permissions ?? null,
+    auth_id: authData.user.id,
+    password: data.password,
   }
 
-  const { data: user, error } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("Users")
     .insert([insertData])
-    .select("id, name, email, is_admin, created_at, role, permissions")
+    .select(
+      "id, name, email, is_admin, created_at, role, permissions, password"
+    )
     .single()
 
-  if (error) {
-    if (error.code === "23505") throw new Error("الإيميل مستخدم بالفعل")
-    throw error
+  if (profileError) {
+    await supabase.auth.admin.deleteUser(authData.user.id)
+    if (profileError.code === "23505") throw new Error("الإيميل مستخدم بالفعل")
+    throw profileError
   }
-  return user as User
+
+  return profile as User
 }
 
 export async function updateUser(
@@ -59,7 +84,9 @@ export async function updateUser(
     .from("Users")
     .update(updateData)
     .eq("id", id)
-    .select("id, name, email, is_admin, created_at, role, permissions")
+    .select(
+      "id, name, email, is_admin, created_at, role, permissions, password"
+    )
     .single()
 
   if (error) throw error

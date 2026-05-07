@@ -1,14 +1,14 @@
+// add.tsx
 "use client"
 
 import React, { useState, useEffect, useMemo } from "react"
-import { User, Mail, Shield, Lock } from "lucide-react"
+import { User, Phone } from "lucide-react"
 import { Dialog } from "@/components/Dialog"
 import { Input, Label, Select, SubHeader } from "@/components/ui-helpers"
 import { toast } from "sonner"
 import { User as UserType } from "@/hooks/useUsers"
-import { addUser, updateUser } from "./uploadUsers"
+import { createUserWithPhone, updateUser } from "./uploadUsers"
 
-// تعريف الأنواع
 type Role = "مدير" | "مشرف" | "مخصص"
 type PermissionLevel = "none" | "view" | "edit"
 
@@ -32,7 +32,7 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
   const isEditMode = !!initialData
 
   const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
   const [role, setRole] = useState<Role>("مخصص")
   const [permissions, setPermissions] = useState<Permissions>({
     companies: "none",
@@ -48,10 +48,8 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
     if (isOpen) {
       if (isEditMode && initialData) {
         setName(initialData.name || "")
-        const emailName = initialData.email?.split("@")[0] || ""
-        setEmail(emailName)
+        setPhone("")
 
-        // تحديد الدور بناءً على البيانات المحفوظة
         if (initialData.role === "مدير" || (initialData as any).is_admin) {
           setRole("مدير")
         } else if (initialData.role === "مشرف") {
@@ -60,7 +58,6 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
           setRole("مخصص")
         }
 
-        // تعبئة الصلاحيات إن وجدت
         if ((initialData as any).permissions) {
           setPermissions((initialData as any).permissions as Permissions)
         } else {
@@ -74,9 +71,8 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
           })
         }
       } else {
-        // وضع الإضافة
         setName("")
-        setEmail("")
+        setPhone("")
         setRole("مخصص")
         setPermissions({
           companies: "none",
@@ -90,7 +86,6 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
     }
   }, [isOpen, isEditMode, initialData])
 
-  // ضبط الصلاحيات تلقائيًا حسب الدور
   useEffect(() => {
     if (role === "مدير") {
       setPermissions({
@@ -111,18 +106,17 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
         annualRenewal: "edit",
       })
     }
-    // في حالة "مخصص" نترك الصلاحيات دون تغيير (يحددها المستخدم)
   }, [role])
 
   const isFormInvalid = useMemo(() => {
     if (!name.trim()) return true
-    if (!isEditMode && !email.trim()) return true
+    if (!isEditMode && !phone.trim()) return true
     if (role === "مخصص") {
       const hasAny = Object.values(permissions).some((p) => p !== "none")
       if (!hasAny) return true
     }
     return false
-  }, [name, email, isEditMode, role, permissions])
+  }, [name, phone, isEditMode, role, permissions])
 
   const handleSave = async () => {
     setIsSubmitting(true)
@@ -137,14 +131,20 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
         })
         toast.success("تم تعديل بيانات المستخدم")
       } else {
-        const fullEmail = email.trim() + "@gmail.com"
-        user = await addUser({
+        const cleanPhone = phone.trim().replace(/\D/g, "")
+        const fakeEmail = cleanPhone + "@Hashel.com"
+        const password = cleanPhone.slice(-6) + "@Hs"
+
+        user = await createUserWithPhone({
           name: name.trim(),
-          email: fullEmail,
+          email: fakeEmail,
+          password,
           role,
           permissions,
         })
-        toast.success("تم إضافة المستخدم بنجاح")
+        toast.success(`تم إضافة المستخدم – كلمة المرور: ${password}`, {
+          duration: 8000,
+        })
       }
 
       onSave(user)
@@ -156,7 +156,6 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
     }
   }
 
-  // لتحويل مستوى الصلاحية إلى نص عربي
   const permissionToLabel = (level: PermissionLevel): string => {
     switch (level) {
       case "view":
@@ -168,7 +167,6 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
     }
   }
 
-  // لتحويل النص العربي إلى PermissionLevel
   const labelToPermission = (label: string): PermissionLevel => {
     if (label === "مشاهدة") return "view"
     if (label === "تعديل") return "edit"
@@ -196,7 +194,6 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
         <SubHeader title="البيانات الأساسية" icon={User} />
 
         <div className="space-y-7">
-          {/* الاسم */}
           <div>
             <Label text="اسم المستخدم" required />
             <Input
@@ -206,41 +203,31 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
             />
           </div>
 
-          {/* البريد الإلكتروني */}
           {isEditMode ? (
             <div>
-              <Label text="البريد الإلكتروني" />
+              <Label text="رقم الجوال" />
               <div className="flex h-12 items-center rounded-xl border border-input bg-muted/30 px-4 text-foreground">
-                <Mail className="ml-2 h-4 w-4 text-muted-foreground" />
+                <Phone className="ml-2 h-4 w-4 text-muted-foreground" />
                 <span>{initialData?.email}</span>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                البريد الإلكتروني غير قابل للتعديل
+                رقم الجوال غير قابل للتعديل
               </p>
             </div>
           ) : (
             <div>
-              <Label text="البريد الإلكتروني" required />
-              <div className="flex items-stretch overflow-hidden rounded-xl border border-input bg-background focus-within:ring-2 focus-within:ring-primary/20">
-                <span className="flex items-center border-r border-input bg-muted/50 px-3 text-sm text-muted-foreground">
-                  gmail.com@
-                </span>
-                <input
-                  type="text"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="example"
-                  className="h-12 flex-1 bg-transparent px-4 text-foreground outline-none"
-                  dir="ltr"
-                />
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                أدخل اسم البريد الإلكتروني فقط (بدون @gmail.com)
-              </p>
+              <Label text="رقم الجوال" required />
+              <Input
+                value={phone}
+                onChange={setPhone}
+                placeholder="05xxxxxxxx"
+              />
+              {/* <p className="mt-1 text-xs text-muted-foreground">
+                سيتم إنشاء بريد إلكتروني تلقائي بصيغة الرقم@Hashel.com
+              </p> */}
             </div>
           )}
 
-          {/* الدور */}
           <div>
             <Label text="الدور" required />
             <Select
@@ -251,7 +238,6 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
             />
           </div>
 
-          {/* الصلاحيات التفصيلية – تظهر فقط عند اختيار "مخصص" */}
           {role === "مخصص" && (
             <div>
               <Label text="الصلاحيات" required />

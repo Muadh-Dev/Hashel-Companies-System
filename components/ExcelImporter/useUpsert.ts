@@ -86,7 +86,8 @@ export function useUpsert<T extends Record<string, any>>({
   const upsert = useCallback(
     async (
       data: Partial<T>[],
-      onProgress?: (done: number, total: number) => void
+      onProgress?: (done: number, total: number) => void,
+      extraData: Record<string, any> = {} // <--- NEW: Added extraData parameter
     ): Promise<void> => {
       if (!data.length) {
         toast.warning("لا توجد بيانات للاستيراد")
@@ -97,7 +98,7 @@ export function useUpsert<T extends Record<string, any>>({
       try {
         // خط الدفاع الثاني: تنظيف البيانات ومعالجة التواريخ
         const cleanData = data.map((row) => {
-          const cleaned = { ...row }
+          const cleaned = { ...row, ...extraData }
 
           // 1. حذف الحقول غير المرغوب بها
           for (const field of stripFields) delete cleaned[field]
@@ -105,7 +106,7 @@ export function useUpsert<T extends Record<string, any>>({
           // 2. معالجة حقول التاريخ المحددة
           for (const key in cleaned) {
             if (dateFields.includes(key)) {
-              cleaned[key] = parseExcelDate(cleaned[key]) as any
+              ;(cleaned as any)[key] = parseExcelDate((cleaned as any)[key])
             }
           }
 

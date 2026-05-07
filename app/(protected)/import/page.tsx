@@ -82,7 +82,7 @@ export default function ImportPage() {
   const { upsertCompanies } = useCompanies()
   const { upsertConectCompanies } = useConectCompanies()
   const { upsertTransactions } = useTransactions()
-  const [serviceType, setServiceType] = useState<string | null>(null)
+  const [serviceType, setServiceType] = useState<string>("نقل كفالة")
 
   return (
     <div className="mx-auto max-w-7xl space-y-12 p-8" dir="rtl">
@@ -122,9 +122,7 @@ export default function ImportPage() {
           {["نقل كفالة", "تجديد سنوي", "إصدار تأشيرة"].map((type) => (
             <button
               key={type}
-              onClick={() =>
-                setServiceType((prev) => (prev === type ? null : type))
-              }
+              onClick={() => setServiceType(() => type)}
               className={`rounded-lg border px-4 py-2 text-sm font-bold transition-all ${
                 serviceType === type
                   ? "border-blue-600 bg-blue-600 text-white"
@@ -142,7 +140,9 @@ export default function ImportPage() {
         </div>
         <ExcelImporter
           targetColumns={transactionColumns}
-          onImport={(data, onProgress) => upsertTransactions(data, onProgress)}
+          onImport={(data, onProgress) =>
+            upsertTransactions(data, onProgress, { service_type: serviceType })
+          }
           buttonLabel="استيراد المعاملات"
         />
       </Section>

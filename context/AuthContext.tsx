@@ -35,6 +35,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>
   signOut: () => void
   retry: () => void
+  signInWithPhone: (phone: string, password: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType)
@@ -203,6 +204,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null)
   }, [])
 
+  const signInWithPhone = useCallback(
+    async (phone: string, password: string) => {
+      setLoading(true)
+      setError(null)
+
+      // تحويل الرقم إلى تنسيق إيميل وهمي
+      const fakeEmail = `${phone}@Hashel.com`
+
+      try {
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email: fakeEmail,
+          password: password,
+        })
+
+        if (authError) throw authError
+      } catch (err: any) {
+        setError(err.message || "فشل تسجيل الدخول")
+        setLoading(false)
+        throw err // لنتمكن من إظهار التنبيه في الواجهة
+      }
+    },
+    []
+  )
+
   return (
     <AuthContext.Provider
       value={{
@@ -211,6 +236,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         error,
         signInWithGoogle,
+        signInWithPhone,
         signOut,
         retry,
       }}
