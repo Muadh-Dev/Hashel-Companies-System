@@ -16,7 +16,7 @@ export type UserInput = {
  */
 export async function createUserWithPhone(
   data: UserInput & { password: string }
-): Promise<void> {
+): Promise<User> {
   if (!data.name?.trim()) throw new Error("اسم المستخدم مطلوب")
   if (!data.email?.trim()) throw new Error("رقم الجوال مطلوب")
   if (!data.password?.trim()) throw new Error("كلمة المرور مطلوبة")
@@ -24,8 +24,8 @@ export async function createUserWithPhone(
   // إعداد الإيميل الوهمي داخلياً
   const internalEmail = `${data.email}@internal.system`
 
-  // استدعاء دالة الـ RPC التي أنشأناها في SQL
-  const { error } = await supabase.rpc("create_user_via_rpc", {
+  // استدعاء دالة الـ RPC
+  const { data: newUserId, error } = await supabase.rpc("create_user_via_rpc", {
     p_phone_email: internalEmail,
     p_password: data.password,
     p_name: data.name,
@@ -39,6 +39,16 @@ export async function createUserWithPhone(
       throw new Error("هذا الرقم مسجل بالفعل")
     throw new Error("فشل إنشاء الحساب: " + error.message)
   }
+
+  // إرجاع الكائن ليتطابق مع نوع User
+  return {
+    id: newUserId,
+    name: data.name,
+    email: data.email, // نرجع الجوال كما هو للواجهة
+    role: data.role ?? "مخصص",
+    is_admin: data.is_admin ?? false,
+    permissions: data.permissions,
+  } as User
 }
 
 /**
