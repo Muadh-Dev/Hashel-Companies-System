@@ -210,7 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null)
 
       // تحويل الرقم إلى تنسيق إيميل وهمي
-      const fakeEmail = `${phone}@Hashel.com`
+      const fakeEmail = `${phone}@internal.system`
 
       try {
         const { error: authError } = await supabase.auth.signInWithPassword({

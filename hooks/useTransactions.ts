@@ -28,9 +28,11 @@ export type Transaction = {
   Wphone_num: number
   iqama: number
   medical_insurance: number
+  medical_examination: number
   transport_fees: number
   other_fees: number
   agreed_amount: number
+  tashira_fees: number
   received_amount: number
   note: string
   created_at: string

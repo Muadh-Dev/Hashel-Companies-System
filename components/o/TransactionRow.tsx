@@ -114,6 +114,12 @@ export default function TransactionRow({
             {item.medical_insurance}
           </td>
           <td className="border-l border-slate-100 bg-blue-50/20 p-4 font-mono dark:border-slate-800 dark:bg-blue-900/5">
+            {item.medical_examination}
+          </td>
+          <td className="border-l border-slate-100 bg-blue-50/20 p-4 font-mono dark:border-slate-800 dark:bg-blue-900/5">
+            {item.tashira_fees}
+          </td>
+          <td className="border-l border-slate-100 bg-blue-50/20 p-4 font-mono dark:border-slate-800 dark:bg-blue-900/5">
             {item.transport_fees}
           </td>
           <td className="border-l border-slate-100 bg-blue-50/20 p-4 font-mono dark:border-slate-800 dark:bg-blue-900/5">
@@ -127,7 +133,10 @@ export default function TransactionRow({
           item.work_permit +
             item.passports +
             item.medical_insurance +
+            item.medical_examination +
+            item.tashira_fees +
             item.other_fees +
+            item.iqama +
             item.transport_fees
         ).toLocaleString()}
       </td>

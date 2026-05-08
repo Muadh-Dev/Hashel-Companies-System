@@ -119,6 +119,12 @@ export default function TransactionTable({
                   تأمين طبي
                 </th>
                 <th className="border-l border-slate-200 bg-blue-50/50 p-4 font-bold text-blue-600 dark:border-slate-700/50 dark:bg-blue-900/10 dark:text-blue-400">
+                  كشف طبي
+                </th>
+                <th className="border-l border-slate-200 bg-blue-50/50 p-4 font-bold text-blue-600 dark:border-slate-700/50 dark:bg-blue-900/10 dark:text-blue-400">
+                  إصدار تأشيرة
+                </th>
+                <th className="border-l border-slate-200 bg-blue-50/50 p-4 font-bold text-blue-600 dark:border-slate-700/50 dark:bg-blue-900/10 dark:text-blue-400">
                   نقل
                 </th>
                 <th className="border-l border-slate-200 bg-blue-50/50 p-4 font-bold text-blue-600 dark:border-slate-700/50 dark:bg-blue-900/10 dark:text-blue-400">

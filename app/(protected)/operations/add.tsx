@@ -48,6 +48,7 @@ const getDefaultData = (): TransactionInput => ({
   passports: 0,
   iqama: 0,
   medical_insurance: 0,
+  medical_examination: 0,
   transport_fees: 0,
   other_fees: 0,
   agreed_amount: 0,
@@ -55,6 +56,7 @@ const getDefaultData = (): TransactionInput => ({
   note: "",
   unified_number_of_company: "",
   working: "نعم",
+  tashira_fees: 0,
 })
 
 // ==========================================
@@ -149,6 +151,8 @@ export function TransactionModal({
       Number(data.work_permit) +
       Number(data.passports) +
       Number(data.medical_insurance) +
+      Number(data.medical_examination) +
+      Number(data.tashira_fees) +
       Number(data.transport_fees) +
       Number(data.iqama) +
       Number(data.other_fees)
@@ -446,6 +450,15 @@ export function TransactionModal({
                   />
                 </FormField>
 
+                <FormField label="كشف الطبي">
+                  <NumberInput
+                    value={data.medical_examination}
+                    onChange={(v) =>
+                      handleInputChange("medical_examination", v)
+                    }
+                  />
+                </FormField>
+
                 <FormField label="الإقامة">
                   <NumberInput
                     value={data.iqama}
@@ -457,6 +470,13 @@ export function TransactionModal({
                   <NumberInput
                     value={data.transport_fees}
                     onChange={(v) => handleInputChange("transport_fees", v)}
+                  />
+                </FormField>
+
+                <FormField label="اصدار تأشيرة">
+                  <NumberInput
+                    value={data.tashira_fees}
+                    onChange={(v) => handleInputChange("tashira_fees", v)}
                   />
                 </FormField>
 

@@ -4,97 +4,73 @@ import { User } from "@/hooks/useUsers"
 
 export type UserInput = {
   name: string
-  email: string
+  email: string // هنا يمثل رقم الجوال
   is_admin?: boolean
   role?: "مدير" | "مشرف" | "مخصص"
-  permissions?: {
-    companies?: "none" | "view" | "edit"
-    linking?: "none" | "view" | "edit"
-    bankBalance?: "none" | "view" | "edit"
-    sponsorshipTransfer?: "none" | "view" | "edit"
-    visaIssuance?: "none" | "view" | "edit"
-    annualRenewal?: "none" | "view" | "edit"
-  }
+  permissions?: any
 }
 
+/**
+ * إنشاء مستخدم جديد "بإيهام" النظام باستخدام رقم الجوال كإيميل
+ * وتخزين كلمة المرور بنص صريح في جدول Users
+ */
 export async function createUserWithPhone(
   data: UserInput & { password: string }
-): Promise<User> {
+): Promise<void> {
   if (!data.name?.trim()) throw new Error("اسم المستخدم مطلوب")
   if (!data.email?.trim()) throw new Error("رقم الجوال مطلوب")
   if (!data.password?.trim()) throw new Error("كلمة المرور مطلوبة")
 
-  const { data: authData, error: authError } =
-    await supabase.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      email_confirm: true,
-    })
+  // إعداد الإيميل الوهمي داخلياً
+  const internalEmail = `${data.email}@internal.system`
 
-  if (authError) {
-    if (authError.message?.includes("already been registered")) {
+  // استدعاء دالة الـ RPC التي أنشأناها في SQL
+  const { error } = await supabase.rpc("create_user_via_rpc", {
+    p_phone_email: internalEmail,
+    p_password: data.password,
+    p_name: data.name,
+    p_role: data.role ?? "مخصص",
+    p_is_admin: data.is_admin ?? false,
+    p_permissions: data.permissions ?? {},
+  })
+
+  if (error) {
+    if (error.message.includes("users_email_key"))
       throw new Error("هذا الرقم مسجل بالفعل")
-    }
-    throw new Error("فشل إنشاء الحساب: " + authError.message)
+    throw new Error("فشل إنشاء الحساب: " + error.message)
   }
-
-  if (!authData.user) throw new Error("فشل إنشاء الحساب")
-
-  const insertData = {
-    name: data.name,
-    email: data.email,
-    is_admin: data.is_admin ?? false,
-    role: data.role ?? "مخصص",
-    permissions: data.permissions ?? null,
-    auth_id: authData.user.id,
-    password: data.password,
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from("Users")
-    .insert([insertData])
-    .select(
-      "id, name, email, is_admin, created_at, role, permissions, password"
-    )
-    .single()
-
-  if (profileError) {
-    await supabase.auth.admin.deleteUser(authData.user.id)
-    if (profileError.code === "23505") throw new Error("الإيميل مستخدم بالفعل")
-    throw profileError
-  }
-
-  return profile as User
 }
 
+/**
+ * تحديث بيانات المستخدم في جدول Users
+ */
 export async function updateUser(
   id: string,
   data: Partial<UserInput>
 ): Promise<User> {
   if (!id) throw new Error("معرف المستخدم مطلوب")
 
-  const updateData: Record<string, any> = {}
-  if (data.name !== undefined) updateData.name = data.name
-  if (data.email !== undefined) updateData.email = data.email
-  if (data.is_admin !== undefined) updateData.is_admin = data.is_admin
-  if (data.role !== undefined) updateData.role = data.role
-  if (data.permissions !== undefined) updateData.permissions = data.permissions
-
-  const { data: user, error } = await supabase
+  const { data: updatedUser, error } = await supabase
     .from("Users")
-    .update(updateData)
+    .update(data)
     .eq("id", id)
-    .select(
-      "id, name, email, is_admin, created_at, role, permissions, password"
-    )
+    .select()
     .single()
 
   if (error) throw error
-  return user as User
+  return updatedUser as User
 }
 
+/**
+ * الحذف الكامل والنهائي من نظام Auth ومن جدول Users
+ */
 export async function deleteUser(id: string): Promise<void> {
   if (!id) throw new Error("معرف المستخدم مطلوب")
-  const { error } = await supabase.from("Users").delete().eq("id", id)
-  if (error) throw error
+
+  // استدعاء دالة الحذف عبر RPC لضمان حذف المستخدم من نظام المصادقة أيضاً
+  const { error } = await supabase.rpc("delete_user_via_rpc", {
+    p_user_id: id,
+  })
+
+  if (error) throw new Error("فشل حذف المستخدم: " + error.message)
 }
