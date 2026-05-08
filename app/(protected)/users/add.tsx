@@ -132,12 +132,12 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
         toast.success("تم تعديل بيانات المستخدم")
       } else {
         const cleanPhone = phone.trim().replace(/\D/g, "")
-        const fakeEmail = cleanPhone + "@Hashel.com"
-        const password = cleanPhone.slice(-6) + "@Hs"
+        const password = cleanPhone.slice(-6) + "@in"
 
+        // ✅ تم تمرير الجوال الصافي بدون @internal.system لأن الدالة ستتكفل بذلك
         user = await createUserWithPhone({
           name: name.trim(),
-          email: fakeEmail,
+          email: cleanPhone,
           password,
           role,
           permissions,
