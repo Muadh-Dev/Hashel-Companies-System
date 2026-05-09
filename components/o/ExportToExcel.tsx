@@ -28,8 +28,8 @@ type Transaction = {
   service_type: string
   work_permit: number
   passports: number
-  phone_num: number
-  Wphone_num: number
+  phone_num: string
+  Wphone_num: string
   iqama: number
   medical_insurance: number
   medical_examination: number
@@ -255,7 +255,7 @@ export default function ExportToExcel() {
           iqama_number: transaction.iqama_number || "",
           nationality: transaction.nationality || "",
           profession: transaction.profession || "",
-          phone_num: transaction.phone_num || 0,
+          phone_num: `${transaction.phone_num}` || "",
           service_type: transaction.service_type || "",
           expiry_date: transaction.expiry_date
             ? new Date(transaction.expiry_date).toLocaleDateString("ar-SA")
@@ -288,7 +288,7 @@ export default function ExportToExcel() {
             transaction.companies?.social_insurance_number || "",
           Wresident_name: transaction.Wresident_name || "",
           Wiqama_number: transaction.Wiqama_number || "",
-          Wphone_num: transaction.Wphone_num || 0,
+          Wphone_num: `${transaction.Wphone_num}` || "",
           memo_number: transaction.memo_number || "",
           note: transaction.note || "",
         })
