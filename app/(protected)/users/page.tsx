@@ -11,7 +11,7 @@ import {
 import { useUsers, type User } from "@/hooks/useUsers"
 import { useAuth } from "@/context/AuthContext"
 import { AddUsersModal } from "./add"
-import { deleteUser, resetUserPassword } from "./uploadUsers"
+import { deleteUserAction } from "./uploadUsers"
 import DeleteConfirmModal from "@/components/DeleteConfirmModal"
 import { toast } from "sonner"
 import {
@@ -108,7 +108,7 @@ export default function UsersPage() {
     if (!deleteTarget) return
     setIsDeleting(true)
     try {
-      await deleteUser(deleteTarget.auth_id)
+      await deleteUserAction(deleteTarget.auth_id)
       removeUserLocal(deleteTarget.auth_id)
       toast.success("تم حذف المستخدم بنجاح")
       setDeleteTarget(null)
@@ -119,18 +119,18 @@ export default function UsersPage() {
     }
   }
 
-  const handleResetPassword = async (user: User) => {
-    try {
-      const newPassword = await resetUserPassword(user.auth_id)
-      // نسخ للحافظة بدل عرضها على الشاشة
-      await navigator.clipboard.writeText(newPassword)
-      toast.success("تم إعادة التعيين — تم نسخ كلمة المرور للحافظة", {
-        duration: 6000,
-      })
-    } catch {
-      toast.error("فشل إعادة تعيين كلمة المرور")
-    }
-  }
+  // const handleResetPassword = async (user: User) => {
+  //   try {
+  //     const newPassword = await resetUserPassword(user.auth_id)
+  //     // نسخ للحافظة بدل عرضها على الشاشة
+  //     await navigator.clipboard.writeText(newPassword)
+  //     toast.success("تم إعادة التعيين — تم نسخ كلمة المرور للحافظة", {
+  //       duration: 6000,
+  //     })
+  //   } catch {
+  //     toast.error("فشل إعادة تعيين كلمة المرور")
+  //   }
+  // }
 
   return (
     <div className="p-8" dir="rtl">
@@ -208,7 +208,7 @@ export default function UsersPage() {
                           تعديل
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleResetPassword(user)}
+                          // onClick={() => handleResetPassword(user)}
                           className="cursor-pointer gap-2 text-amber-600 focus:text-amber-600"
                         >
                           <KeyRound className="h-4 w-4" />
