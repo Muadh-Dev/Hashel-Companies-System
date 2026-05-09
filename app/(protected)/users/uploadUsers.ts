@@ -8,7 +8,7 @@ import { User } from "@/hooks/useUsers"
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
 )
 
 // توليد كلمة مرور عشوائية حقيقية — لا علاقة لها بالجوال
