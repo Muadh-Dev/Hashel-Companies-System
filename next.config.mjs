@@ -5,12 +5,12 @@ const withPWA = withPWAInit({
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development", // إيقاف الـ PWA في بيئة التطوير لتسهيل العمل
+  disable: process.env.NODE_ENV === "development",
 })
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // إعدادات Next.js الخاصة بك هنا
+  // امسح سطر turbopack: false من هنا
 }
 
 export default withPWA(nextConfig)
