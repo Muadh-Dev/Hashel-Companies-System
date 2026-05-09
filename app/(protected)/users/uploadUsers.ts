@@ -22,11 +22,11 @@ function generatePassword(): string {
 
 // التحقق من أن المستدعي مدير — يُستدعى في أول كل دالة
 async function assertIsAdmin() {
-  const cookieStore = cookies()
+  const cookieStore = await cookies() // ← await هنا هو الحل
   const client = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: async (n) => (await cookieStore).get(n)?.value } }
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { cookies: { get: (n) => cookieStore.get(n)?.value } } // ← بدون async هنا
   )
 
   const {
