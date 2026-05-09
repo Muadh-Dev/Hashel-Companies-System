@@ -11,7 +11,11 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// توليد كلمة مرور عشوائية حقيقية — لا علاقة لها بالجوال
+// دالة مساعدة لتنظيف رقم الجوال كما في AuthContext
+function cleanPhone(phone: string): string {
+  return phone.trim().replace(/\D/g, "")
+}
+
 function generatePassword(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"
   const random = Array.from(crypto.getRandomValues(new Uint8Array(8)))
@@ -20,14 +24,32 @@ function generatePassword(): string {
   return random + "@in"
 }
 
-// التحقق من أن المستدعي مدير — يُستدعى في أول كل دالة
+/**
+ * التحقق من الإدارة - تم تحديثها لتتوافق مع Next.js 15/16
+ * وتطبيق نفس منطق الحماية في AuthContext
+ */
 async function assertIsAdmin() {
   try {
     const cookieStore = await cookies()
+
+    // إعداد العميل بشكل يضمن قراءة الكوكيز بشكل صحيح في Next.js الحديث
     const client = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      { cookies: { get: (n) => cookieStore.get(n)?.value } }
+      {
+        cookies: {
+          getAll: () => cookieStore.getAll(),
+          setAll: (cookiesToSet) => {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            } catch {
+              // تجاهل الخطأ إذا تم استدعاؤه من مكون سيرفر
+            }
+          },
+        },
+      }
     )
 
     const {
@@ -35,21 +57,28 @@ async function assertIsAdmin() {
       error: authError,
     } = await client.auth.getUser()
 
-    console.log("🔍 user:", user) // ← شوف اللوق
-    console.log("🔍 authError:", authError)
+    if (authError || !user) {
+      console.error("🔍 فشل التحقق من الجلسة:", authError)
+      throw new Error("لا يوجد مستخدم مسجل")
+    }
 
-    if (!user) throw new Error("لا يوجد مستخدم مسجل")
-
+    // تطبيق حماية AuthContext: التحقق عبر auth_id والبحث في جدول Users
     const { data, error: dbError } = await client
       .from("Users")
-      .select("role")
+      .select("role, is_admin")
       .eq("auth_id", user.id)
-      .single()
+      .maybeSingle() // أمن من single() في حال عدم وجود السجل
 
-    console.log("🔍 role:", data?.role) // ← شوف اللوق
-    console.log("🔍 dbError:", dbError)
+    console.log("🔍 صلاحيات المستخدم:", data)
 
-    if (data?.role !== "مدير") throw new Error("ليس مديراً")
+    if (dbError || !data) {
+      throw new Error("لم يتم العثور على بيانات الصلاحيات")
+    }
+
+    // التحقق المزدوج (الرتبة أو علامة المدير)
+    if (data.role !== "مدير" && !data.is_admin) {
+      throw new Error("ليس مديراً")
+    }
   } catch (err) {
     console.error("❌ assertIsAdmin فشل:", err)
     throw err
@@ -58,7 +87,7 @@ async function assertIsAdmin() {
 
 export type UserInput = {
   name: string
-  email: string
+  email: string // هنا يمثل رقم الجوال
   is_admin?: boolean
   role?: "مدير" | "مشرف" | "مخصص"
   permissions?: any
@@ -72,8 +101,10 @@ export async function createUserWithPhone(
   if (!data.name?.trim()) throw new Error("اسم المستخدم مطلوب")
   if (!data.email?.trim()) throw new Error("رقم الجوال مطلوب")
 
+  // تطبيق حماية AuthContext: تنظيف الرقم قبل المعالجة
+  const phoneNumber = cleanPhone(data.email)
   const password = generatePassword()
-  const internalEmail = `${data.email}@internal.system`
+  const internalEmail = `${phoneNumber}@internal.system`
 
   const { data: authData, error: authError } =
     await supabaseAdmin.auth.admin.createUser({
@@ -87,10 +118,7 @@ export async function createUserWithPhone(
     })
 
   if (authError) {
-    if (
-      authError.message.includes("already exists") ||
-      authError.message.includes("users_email_key")
-    ) {
+    if (authError.message.includes("already exists")) {
       throw new Error("هذا الرقم مسجل بالفعل")
     }
     throw new Error("فشل إنشاء الحساب: " + authError.message)
@@ -103,7 +131,7 @@ export async function createUserWithPhone(
     .insert({
       auth_id,
       name: data.name,
-      email: data.email,
+      email: phoneNumber, // تخزين الرقم النظيف
       role: data.role ?? "مخصص",
       is_admin: data.is_admin ?? false,
       permissions: data.permissions ?? {},
