@@ -10,10 +10,11 @@ import React, {
 import { supabase } from "@/lib/supabase/supabaseSsrClient"
 import type { Session, AuthChangeEvent } from "@supabase/supabase-js"
 
+// تحديث نوع المستخدم ليشمل الدور والصلاحيات
 export type AuthUser = {
-  auth_id: string // ← UUID من Supabase Auth — هذا هو المعرّف الوحيد
+  id: string
   name: string
-  email: string // رقم الجوال فقط بدون @internal.system
+  email: string
   is_admin: boolean
   role?: "مدير" | "مشرف" | "مخصص"
   permissions?: {
@@ -31,9 +32,9 @@ interface AuthContextType {
   session: Session | null
   loading: boolean
   error: string | null
+  signInWithGoogle: () => Promise<void>
   signOut: () => void
   retry: () => void
-  signInWithPhone: (phone: string, password: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType)
@@ -44,35 +45,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  /**
-   * جلب بيانات المستخدم من جدول Users عبر auth_id فقط
-   * auth_id هو UUID من Supabase Auth — الوحيد الموثوق
-   */
-  const fetchProfile = useCallback(async (auth_id: string) => {
+  // جلب الملف الشخصي من جدول Users مع الصلاحيات الجديدة
+  const fetchProfile = useCallback(async (userId: string, email?: string) => {
     try {
-      const { data, error: dbError } = await supabase
+      // البحث بواسطة auth_id
+      const { data: byAuth } = await supabase
         .from("Users")
-        .select("auth_id, name, email, is_admin, role, permissions")
-        .eq("auth_id", auth_id)
+        .select("id, name, email, is_admin, role, permissions")
+        .eq("auth_id", userId)
         .maybeSingle()
 
-      if (dbError) throw dbError
-
-      if (data) {
+      if (byAuth) {
         setUser({
-          auth_id: data.auth_id,
-          name: data.name,
-          email: data.email, // الجوال فقط
-          is_admin: data.is_admin,
-          role: data.role,
-          permissions: data.permissions,
+          id: byAuth.id,
+          name: byAuth.name,
+          email: byAuth.email,
+          is_admin: byAuth.is_admin,
+          role: byAuth.role,
+          permissions: byAuth.permissions,
         })
         setError(null)
-      } else {
-        // الحساب موجود في Auth لكن غير موجود في جدول Users
-        setUser(null)
-        setError("لم يتم منحك صلاحية. تواصل مع مدير النظام.")
+        return
       }
+
+      // إذا لم يوجد بـ auth_id، نبحث بالإيميل
+      if (email) {
+        const { data: byEmail } = await supabase
+          .from("Users")
+          .select("id, name, email, is_admin, role, permissions, auth_id")
+          .eq("email", email)
+          .maybeSingle()
+
+        if (byEmail) {
+          // البريد مستعمل من قبل جلسة أخرى
+          if (byEmail.auth_id) {
+            setUser(null)
+            setError("هذا الحساب مرتبط بجلسة أخرى.")
+            return
+          }
+
+          // ربط auth_id بهذا المستخدم
+          const { error: updateError } = await supabase
+            .from("Users")
+            .update({ auth_id: userId })
+            .eq("id", byEmail.id)
+
+          if (updateError) throw updateError
+
+          setUser({
+            id: byEmail.id,
+            name: byEmail.name,
+            email: byEmail.email,
+            is_admin: byEmail.is_admin,
+            role: byEmail.role,
+            permissions: byEmail.permissions,
+          })
+          setError(null)
+          return
+        }
+      }
+
+      // لا يوجد مستخدم مطابق
+      setUser(null)
+      setError("لم يتم منحك صلاحية بعد. يرجى التواصل مع مدير النظام.")
     } catch (err: any) {
       console.error("❌ خطأ في جلب الملف الشخصي:", err)
       setUser(null)
@@ -80,7 +115,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // التهيئة الأولى عند تحميل التطبيق
+  // إعادة المحاولة
+  const retry = useCallback(() => {
+    setLoading(true)
+    setError(null)
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        const ses = data.session
+        setSession(ses)
+        if (ses?.user) {
+          return fetchProfile(ses.user.id, ses.user.email)
+        } else {
+          setUser(null)
+        }
+      })
+      .catch((err) => {
+        setError(err.message)
+      })
+      .finally(() => setLoading(false))
+  }, [fetchProfile])
+
+  // التهيئة الأولى
   useEffect(() => {
     let mounted = true
     setLoading(true)
@@ -92,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const ses = data.session
         setSession(ses)
         if (ses?.user) {
-          return fetchProfile(ses.user.id)
+          return fetchProfile(ses.user.id, ses.user.email)
         } else {
           setUser(null)
           setError(null)
@@ -105,20 +161,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (mounted) setLoading(false)
       })
 
-    // الاستماع لأي تغيير في حالة الجلسة (دخول / خروج)
     const { data: listener } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, newSession: Session | null) => {
         if (!mounted) return
         setSession(newSession)
+        setLoading(false)
 
         if (newSession?.user) {
-          fetchProfile(newSession.user.id).finally(() => {
-            if (mounted) setLoading(false)
-          })
+          fetchProfile(newSession.user.id, newSession.user.email)
         } else {
           setUser(null)
           setError(null)
-          setLoading(false)
         }
       }
     )
@@ -129,55 +182,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchProfile])
 
-  // إعادة محاولة جلب البيانات يدوياً
-  const retry = useCallback(() => {
-    setLoading(true)
-    setError(null)
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
-        const ses = data.session
-        setSession(ses)
-        if (ses?.user) {
-          return fetchProfile(ses.user.id)
-        } else {
-          setUser(null)
-        }
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [fetchProfile])
+  // تسجيل الدخول عبر Google
+  const signInWithGoogle = useCallback(async () => {
+    const origin = window.location.origin
+      .replace(/:80$/, "")
+      .replace(/:443$/, "")
 
-  /**
-   * تسجيل الدخول برقم الجوال وكلمة المرور
-   * يحول الرقم تلقائياً إلى إيميل وهمي لنظام Supabase Auth
-   */
-  const signInWithPhone = useCallback(
-    async (phone: string, password: string) => {
-      setLoading(true)
-      setError(null)
-
-      // تنظيف الرقم من أي مسافات أو شرطات أو أحرف غير رقمية
-      const cleanPhone = phone.trim().replace(/\D/g, "")
-      const fakeEmail = `${cleanPhone}@internal.system`
-
-      try {
-        const { error: authError } = await supabase.auth.signInWithPassword({
-          email: fakeEmail,
-          password,
-        })
-
-        if (authError) throw authError
-        // ✅ لا تضع setLoading(false) هنا
-        // onAuthStateChange سيستدعي fetchProfile ويضع setLoading(false) تلقائياً
-      } catch (err: any) {
-        setError("رقم الجوال أو كلمة المرور غير صحيحة")
-        setLoading(false)
-        throw err // لإظهار toast في صفحة تسجيل الدخول
-      }
-    },
-    []
-  )
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${origin}/auth/callback`,
+      },
+    })
+  }, [])
 
   const signOut = useCallback(() => {
     supabase.auth.signOut().catch(console.error)
@@ -193,7 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         loading,
         error,
-        signInWithPhone,
+        signInWithGoogle,
         signOut,
         retry,
       }}

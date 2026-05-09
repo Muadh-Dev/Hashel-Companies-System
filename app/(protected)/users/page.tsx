@@ -1,17 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import {
-  MoreHorizontal,
-  Edit,
-  Trash,
-  ShieldAlert,
-  KeyRound,
-} from "lucide-react"
+import { MoreHorizontal, Edit, Trash, ShieldAlert } from "lucide-react"
 import { useUsers, type User } from "@/hooks/useUsers"
 import { useAuth } from "@/context/AuthContext"
 import { AddUsersModal } from "./add"
-import { deleteUserAction } from "./uploadUsers"
+import { deleteUser } from "./uploadUsers"
 import DeleteConfirmModal from "@/components/DeleteConfirmModal"
 import { toast } from "sonner"
 import {
@@ -21,6 +15,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
 
+// دالة مساعدة لتحويل الصلاحيات إلى نص مفهوم للعرض
 function formatPermissions(user: User): string {
   if (!user.permissions) return ""
   const map: Record<string, string> = {
@@ -30,6 +25,7 @@ function formatPermissions(user: User): string {
     sponsorshipTransfer: "نقل الكفالة",
     visaIssuance: "إصدار تأشيرة",
     annualRenewal: "التجديد سنوي",
+    importData: "استيراد البيانات",
   }
   const items = Object.entries(user.permissions)
     .filter(([, v]) => v !== "none")
@@ -44,9 +40,11 @@ export default function UsersPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
+
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // حماية الصفحة: المدير فقط
   if (currentUser?.role !== "مدير") {
     return (
       <div
@@ -54,12 +52,16 @@ export default function UsersPage() {
         dir="rtl"
       >
         <div className="relative w-full max-w-sm">
+          {/* تأثير هالة ضوئية خلفية ناعمة */}
           <div className="absolute -inset-4 rounded-full bg-rose-500/5 blur-3xl"></div>
+
           <div className="relative flex flex-col items-center space-y-5 rounded-3xl border border-border/50 bg-card/60 p-10 text-center shadow-2xl backdrop-blur-md">
+            {/* أيقونة بتصميم زجاجي Glassmorphism */}
             <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-rose-50 to-rose-100 shadow-inner">
               <ShieldAlert className="h-10 w-10 text-rose-500/80" />
               <div className="absolute -top-1 -right-1 h-4 w-4 animate-pulse rounded-full bg-rose-500/20"></div>
             </div>
+
             <div className="space-y-2">
               <h3 className="text-xl font-bold tracking-tight text-foreground/90">
                 دخول غير مصرح به
@@ -68,6 +70,8 @@ export default function UsersPage() {
                 هذه الصفحة مخصصة لمدير النظام فقط!
               </p>
             </div>
+
+            {/* خط زخرفي بسيط لإنهاء التصميم */}
             <div className="h-1 w-12 rounded-full bg-linear-to-r from-transparent via-rose-200 to-transparent"></div>
           </div>
         </div>
@@ -108,29 +112,16 @@ export default function UsersPage() {
     if (!deleteTarget) return
     setIsDeleting(true)
     try {
-      await deleteUserAction(deleteTarget.auth_id)
+      await deleteUser(deleteTarget.auth_id)
       removeUserLocal(deleteTarget.auth_id)
       toast.success("تم حذف المستخدم بنجاح")
       setDeleteTarget(null)
-    } catch {
+    } catch (error) {
       toast.error("فشل في حذف المستخدم")
     } finally {
       setIsDeleting(false)
     }
   }
-
-  // const handleResetPassword = async (user: User) => {
-  //   try {
-  //     const newPassword = await resetUserPassword(user.auth_id)
-  //     // نسخ للحافظة بدل عرضها على الشاشة
-  //     await navigator.clipboard.writeText(newPassword)
-  //     toast.success("تم إعادة التعيين — تم نسخ كلمة المرور للحافظة", {
-  //       duration: 6000,
-  //     })
-  //   } catch {
-  //     toast.error("فشل إعادة تعيين كلمة المرور")
-  //   }
-  // }
 
   return (
     <div className="p-8" dir="rtl">
@@ -154,7 +145,7 @@ export default function UsersPage() {
             <thead className="bg-muted/50">
               <tr>
                 <th className="p-4 text-right font-bold">الاسم</th>
-                <th className="p-4 text-right font-bold">رقم الهاتف</th>
+                <th className="p-4 text-right font-bold">الإيميل</th>
                 <th className="p-4 text-right font-bold">الدور والصلاحيات</th>
                 <th className="p-4 text-right font-bold">تاريخ الإنشاء</th>
                 <th className="p-4 text-center font-bold">الإجراءات</th>
@@ -164,7 +155,7 @@ export default function UsersPage() {
               {users.map((user) => (
                 <tr key={user.auth_id} className="hover:bg-muted/20">
                   <td className="p-4 font-medium">{user.name}</td>
-                  <td className="p-4 font-mono">{user.email}</td>
+                  <td className="p-4">{user.email}</td>
                   <td className="p-4">
                     <div className="flex flex-col gap-1">
                       <span
@@ -176,7 +167,11 @@ export default function UsersPage() {
                               : "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400"
                         }`}
                       >
-                        {user.role ?? "مخصص"}
+                        {user.role === "مدير"
+                          ? "مدير"
+                          : user.role === "مشرف"
+                            ? "مشرف"
+                            : "مخصص"}
                       </span>
                       {user.role === "مخصص" && user.permissions && (
                         <span
@@ -199,20 +194,13 @@ export default function UsersPage() {
                           <span className="sr-only">فتح القائمة</span>
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuContent align="end" className="w-40">
                         <DropdownMenuItem
                           onClick={() => handleEdit(user)}
                           className="cursor-pointer gap-2"
                         >
                           <Edit className="h-4 w-4" />
                           تعديل
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          // onClick={() => handleResetPassword(user)}
-                          className="cursor-pointer gap-2 text-amber-600 focus:text-amber-600"
-                        >
-                          <KeyRound className="h-4 w-4" />
-                          إعادة تعيين كلمة المرور
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDeleteRequest(user)}
