@@ -1,86 +1,153 @@
-// lib/uploadUsers.ts
-import { supabase } from "@/lib/supabase/supabaseSsrClient"
+// uploadUsers.ts
+"use server"
+
+import { createClient } from "@supabase/supabase-js"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
 import { User } from "@/hooks/useUsers"
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+// توليد كلمة مرور عشوائية حقيقية — لا علاقة لها بالجوال
+function generatePassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"
+  const random = Array.from(crypto.getRandomValues(new Uint8Array(8)))
+    .map((b) => chars[b % chars.length])
+    .join("")
+  return random + "@in"
+}
+
+// التحقق من أن المستدعي مدير — يُستدعى في أول كل دالة
+async function assertIsAdmin() {
+  const cookieStore = cookies()
+  const client = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { get: async (n) => (await cookieStore).get(n)?.value } }
+  )
+
+  const {
+    data: { user },
+  } = await client.auth.getUser()
+  if (!user) throw new Error("غير مصرح")
+
+  const { data } = await client
+    .from("Users")
+    .select("role")
+    .eq("auth_id", user.id)
+    .single()
+
+  if (data?.role !== "مدير") throw new Error("غير مصرح")
+}
 
 export type UserInput = {
   name: string
-  email: string // هنا يمثل رقم الجوال
+  email: string
   is_admin?: boolean
   role?: "مدير" | "مشرف" | "مخصص"
   permissions?: any
 }
 
-/**
- * إنشاء مستخدم جديد "بإيهام" النظام باستخدام رقم الجوال كإيميل
- * وتخزين كلمة المرور بنص صريح في جدول Users
- */
 export async function createUserWithPhone(
-  data: UserInput & { password: string }
-): Promise<User> {
+  data: UserInput
+): Promise<User & { generatedPassword: string }> {
+  await assertIsAdmin()
+
   if (!data.name?.trim()) throw new Error("اسم المستخدم مطلوب")
   if (!data.email?.trim()) throw new Error("رقم الجوال مطلوب")
-  if (!data.password?.trim()) throw new Error("كلمة المرور مطلوبة")
 
-  // إعداد الإيميل الوهمي داخلياً
+  const password = generatePassword()
   const internalEmail = `${data.email}@internal.system`
 
-  // استدعاء دالة الـ RPC
-  const { data: newUserId, error } = await supabase.rpc("create_user_via_rpc", {
-    p_phone_email: internalEmail,
-    p_password: data.password,
-    p_name: data.name,
-    p_role: data.role ?? "مخصص",
-    p_is_admin: data.is_admin ?? false,
-    p_permissions: data.permissions ?? {},
-  })
+  const { data: authData, error: authError } =
+    await supabaseAdmin.auth.admin.createUser({
+      email: internalEmail,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        name: data.name,
+        role: data.role ?? "مخصص",
+      },
+    })
 
-  if (error) {
-    if (error.message.includes("users_email_key"))
+  if (authError) {
+    if (
+      authError.message.includes("already exists") ||
+      authError.message.includes("users_email_key")
+    ) {
       throw new Error("هذا الرقم مسجل بالفعل")
-    throw new Error("فشل إنشاء الحساب: " + error.message)
+    }
+    throw new Error("فشل إنشاء الحساب: " + authError.message)
   }
 
-  // إرجاع الكائن ليتطابق مع نوع User
-  return {
-    id: newUserId,
-    name: data.name,
-    email: data.email, // نرجع الجوال كما هو للواجهة
-    role: data.role ?? "مخصص",
-    is_admin: data.is_admin ?? false,
-    permissions: data.permissions,
-  } as User
-}
+  const auth_id = authData.user.id
 
-/**
- * تحديث بيانات المستخدم في جدول Users
- */
-export async function updateUser(
-  id: string,
-  data: Partial<UserInput>
-): Promise<User> {
-  if (!id) throw new Error("معرف المستخدم مطلوب")
-
-  const { data: updatedUser, error } = await supabase
+  const { data: newUser, error: dbError } = await supabaseAdmin
     .from("Users")
-    .update(data)
-    .eq("id", id)
+    .insert({
+      auth_id,
+      name: data.name,
+      email: data.email,
+      role: data.role ?? "مخصص",
+      is_admin: data.is_admin ?? false,
+      permissions: data.permissions ?? {},
+    })
     .select()
     .single()
 
-  if (error) throw error
+  if (dbError) {
+    await supabaseAdmin.auth.admin.deleteUser(auth_id)
+    throw new Error("فشل حفظ بيانات المستخدم: " + dbError.message)
+  }
+
+  return { ...(newUser as User), generatedPassword: password }
+}
+
+export async function updateUser(
+  auth_id: string,
+  data: Partial<UserInput>
+): Promise<User> {
+  await assertIsAdmin()
+
+  if (!auth_id) throw new Error("معرف المستخدم مطلوب")
+
+  const { data: updatedUser, error } = await supabaseAdmin
+    .from("Users")
+    .update(data)
+    .eq("auth_id", auth_id)
+    .select()
+    .single()
+
+  if (error) throw new Error("فشل تحديث المستخدم: " + error.message)
+
   return updatedUser as User
 }
 
-/**
- * الحذف الكامل والنهائي من نظام Auth ومن جدول Users
- */
-export async function deleteUser(id: string): Promise<void> {
-  if (!id) throw new Error("معرف المستخدم مطلوب")
+export async function deleteUser(auth_id: string): Promise<void> {
+  await assertIsAdmin()
 
-  // استدعاء دالة الحذف عبر RPC لضمان حذف المستخدم من نظام المصادقة أيضاً
-  const { error } = await supabase.rpc("delete_user_via_rpc", {
-    p_user_id: id,
-  })
+  if (!auth_id) throw new Error("معرف المستخدم مطلوب")
+
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(auth_id)
 
   if (error) throw new Error("فشل حذف المستخدم: " + error.message)
+}
+
+export async function resetUserPassword(auth_id: string): Promise<string> {
+  await assertIsAdmin()
+
+  if (!auth_id) throw new Error("معرف المستخدم مطلوب")
+
+  const newPassword = generatePassword()
+
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(auth_id, {
+    password: newPassword,
+  })
+
+  if (error) throw new Error("فشل إعادة التعيين: " + error.message)
+
+  return newPassword
 }

@@ -28,61 +28,39 @@ type Props = {
   initialData?: UserType | null
 }
 
+const defaultPermissions: Permissions = {
+  companies: "none",
+  linking: "none",
+  bankBalance: "none",
+  sponsorshipTransfer: "none",
+  visaIssuance: "none",
+  annualRenewal: "none",
+}
+
 export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
   const isEditMode = !!initialData
 
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   const [role, setRole] = useState<Role>("مخصص")
-  const [permissions, setPermissions] = useState<Permissions>({
-    companies: "none",
-    linking: "none",
-    bankBalance: "none",
-    sponsorshipTransfer: "none",
-    visaIssuance: "none",
-    annualRenewal: "none",
-  })
+  const [permissions, setPermissions] =
+    useState<Permissions>(defaultPermissions)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    if (isOpen) {
-      if (isEditMode && initialData) {
-        setName(initialData.name || "")
-        setPhone("")
+    if (!isOpen) return
 
-        if (initialData.role === "مدير" || (initialData as any).is_admin) {
-          setRole("مدير")
-        } else if (initialData.role === "مشرف") {
-          setRole("مشرف")
-        } else {
-          setRole("مخصص")
-        }
-
-        if ((initialData as any).permissions) {
-          setPermissions((initialData as any).permissions as Permissions)
-        } else {
-          setPermissions({
-            companies: "none",
-            linking: "none",
-            bankBalance: "none",
-            sponsorshipTransfer: "none",
-            visaIssuance: "none",
-            annualRenewal: "none",
-          })
-        }
-      } else {
-        setName("")
-        setPhone("")
-        setRole("مخصص")
-        setPermissions({
-          companies: "none",
-          linking: "none",
-          bankBalance: "none",
-          sponsorshipTransfer: "none",
-          visaIssuance: "none",
-          annualRenewal: "none",
-        })
-      }
+    if (isEditMode && initialData) {
+      setName(initialData.name || "")
+      setPhone("")
+      const r = initialData.role
+      setRole(r === "مدير" || r === "مشرف" ? r : "مخصص")
+      setPermissions((initialData as any).permissions ?? defaultPermissions)
+    } else {
+      setName("")
+      setPhone("")
+      setRole("مخصص")
+      setPermissions(defaultPermissions)
     }
   }, [isOpen, isEditMode, initialData])
 
@@ -112,8 +90,7 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
     if (!name.trim()) return true
     if (!isEditMode && !phone.trim()) return true
     if (role === "مخصص") {
-      const hasAny = Object.values(permissions).some((p) => p !== "none")
-      if (!hasAny) return true
+      return !Object.values(permissions).some((p) => p !== "none")
     }
     return false
   }, [name, phone, isEditMode, role, permissions])
@@ -124,7 +101,7 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
       let user: UserType
 
       if (isEditMode && initialData) {
-        user = await updateUser(initialData.id, {
+        user = await updateUser(initialData.auth_id, {
           name: name.trim(),
           role,
           permissions,
@@ -132,19 +109,22 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
         toast.success("تم تعديل بيانات المستخدم")
       } else {
         const cleanPhone = phone.trim().replace(/\D/g, "")
-        const password = cleanPhone.slice(-6) + "@in"
 
-        // ✅ تم تمرير الجوال الصافي بدون @internal.system لأن الدالة ستتكفل بذلك
-        user = await createUserWithPhone({
+        // كلمة المرور تُولَّد في السيرفر — لا نمررها من الواجهة
+        const result = await createUserWithPhone({
           name: name.trim(),
           email: cleanPhone,
-          password,
           role,
           permissions,
         })
-        toast.success(`تم إضافة المستخدم – كلمة المرور: ${password}`, {
-          duration: 8000,
+
+        // نسخ كلمة المرور للحافظة بدل عرضها على الشاشة
+        await navigator.clipboard.writeText(result.generatedPassword)
+        toast.success("تمت الإضافة — تم نسخ كلمة المرور للحافظة", {
+          duration: 6000,
         })
+
+        user = result
       }
 
       onSave(user)
@@ -157,14 +137,9 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
   }
 
   const permissionToLabel = (level: PermissionLevel): string => {
-    switch (level) {
-      case "view":
-        return "مشاهدة"
-      case "edit":
-        return "تعديل"
-      default:
-        return "ممنوع"
-    }
+    if (level === "view") return "مشاهدة"
+    if (level === "edit") return "تعديل"
+    return "ممنوع"
   }
 
   const labelToPermission = (label: string): PermissionLevel => {
@@ -208,7 +183,7 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
               <Label text="رقم الجوال" />
               <div className="flex h-12 items-center rounded-xl border border-input bg-muted/30 px-4 text-foreground">
                 <Phone className="ml-2 h-4 w-4 text-muted-foreground" />
-                <span>{initialData?.email}</span>
+                <span className="font-mono">{initialData?.email}</span>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
                 رقم الجوال غير قابل للتعديل
@@ -222,9 +197,6 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
                 onChange={setPhone}
                 placeholder="05xxxxxxxx"
               />
-              {/* <p className="mt-1 text-xs text-muted-foreground">
-                سيتم إنشاء بريد إلكتروني تلقائي بصيغة الرقم@Hashel.com
-              </p> */}
             </div>
           )}
 

@@ -18,9 +18,10 @@ interface Permissions {
 
 // النوع بعد التعديل
 export type User = {
-  id: string
+  auth_id: string
   name: string
   email: string
+  password: string
   is_admin: boolean
   role: "مدير" | "مشرف" | "مخصص" // حقل اختياري
   permissions: Permissions // حقل اختياري
@@ -58,12 +59,14 @@ export function useUsers() {
 
   const updateUserLocal = useCallback((updatedUser: User) => {
     setUsers((prev) =>
-      prev.map((user) => (user.id === updatedUser.id ? updatedUser : user))
+      prev.map((user) =>
+        user.auth_id === updatedUser.auth_id ? updatedUser : user
+      )
     )
   }, [])
 
-  const removeUserLocal = useCallback((id: string) => {
-    setUsers((prev) => prev.filter((user) => user.id !== id))
+  const removeUserLocal = useCallback((auth_id: string) => {
+    setUsers((prev) => prev.filter((user) => user.auth_id !== auth_id))
   }, [])
 
   return {
