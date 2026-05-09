@@ -22,25 +22,38 @@ function generatePassword(): string {
 
 // التحقق من أن المستدعي مدير — يُستدعى في أول كل دالة
 async function assertIsAdmin() {
-  const cookieStore = await cookies() // ← await هنا هو الحل
-  const client = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    { cookies: { get: (n) => cookieStore.get(n)?.value } } // ← بدون async هنا
-  )
+  try {
+    const cookieStore = await cookies()
+    const client = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      { cookies: { get: (n) => cookieStore.get(n)?.value } }
+    )
 
-  const {
-    data: { user },
-  } = await client.auth.getUser()
-  if (!user) throw new Error("غير مصرح")
+    const {
+      data: { user },
+      error: authError,
+    } = await client.auth.getUser()
 
-  const { data } = await client
-    .from("Users")
-    .select("role")
-    .eq("auth_id", user.id)
-    .single()
+    console.log("🔍 user:", user) // ← شوف اللوق
+    console.log("🔍 authError:", authError)
 
-  if (data?.role !== "مدير") throw new Error("غير مصرح")
+    if (!user) throw new Error("لا يوجد مستخدم مسجل")
+
+    const { data, error: dbError } = await client
+      .from("Users")
+      .select("role")
+      .eq("auth_id", user.id)
+      .single()
+
+    console.log("🔍 role:", data?.role) // ← شوف اللوق
+    console.log("🔍 dbError:", dbError)
+
+    if (data?.role !== "مدير") throw new Error("ليس مديراً")
+  } catch (err) {
+    console.error("❌ assertIsAdmin فشل:", err)
+    throw err
+  }
 }
 
 export type UserInput = {
