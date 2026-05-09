@@ -130,7 +130,7 @@ export function AddUsersModal({ isOpen, onClose, onSave, initialData }: Props) {
       let user: UserType
 
       if (isEditMode && initialData) {
-        user = await updateUser(initialData.auth_id, {
+        user = await updateUser(initialData.id, {
           name: name.trim(),
           role,
           permissions,

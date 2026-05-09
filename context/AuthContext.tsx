@@ -12,7 +12,7 @@ import type { Session, AuthChangeEvent } from "@supabase/supabase-js"
 
 // تحديث نوع المستخدم ليشمل الدور والصلاحيات
 export type AuthUser = {
-  id: string
+  id: number
   name: string
   email: string
   is_admin: boolean

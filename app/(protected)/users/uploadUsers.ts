@@ -1,8 +1,8 @@
-// lib/uploadUsers.ts
 import { supabase } from "@/lib/supabase/supabaseSsrClient"
 import { User } from "@/hooks/useUsers"
 
 export type UserInput = {
+  id?: number // اختياري عند الإنشاء، ضروري عند التعديل
   name: string
   email: string
   is_admin?: boolean
@@ -17,6 +17,7 @@ export type UserInput = {
   }
 }
 
+// إضافة مستخدم جديد
 export async function addUser(data: UserInput): Promise<User> {
   if (!data.name?.trim()) throw new Error("اسم المستخدم مطلوب")
   if (!data.email?.trim()) throw new Error("الإيميل مطلوب")
@@ -32,7 +33,7 @@ export async function addUser(data: UserInput): Promise<User> {
   const { data: user, error } = await supabase
     .from("Users")
     .insert([insertData])
-    .select("auth_id, name, email, is_admin, created_at, role, permissions")
+    .select("id, auth_id, name, email, is_admin, created_at, role, permissions") // تأكد من جلب الـ id هنا
     .single()
 
   if (error) {
@@ -42,8 +43,9 @@ export async function addUser(data: UserInput): Promise<User> {
   return user as User
 }
 
+// تعديل مستخدم بناءً على الـ id
 export async function updateUser(
-  id: string,
+  id: number | string, // المعرف الفريد في جدول Users
   data: Partial<UserInput>
 ): Promise<User> {
   if (!id) throw new Error("معرف المستخدم مطلوب")
@@ -58,16 +60,19 @@ export async function updateUser(
   const { data: user, error } = await supabase
     .from("Users")
     .update(updateData)
-    .eq("auth_id", id)
-    .select("auth_id, name, email, is_admin, created_at, role, permissions")
+    .eq("id", id) // تم التغيير من auth_id إلى id
+    .select("id, auth_id, name, email, is_admin, created_at, role, permissions")
     .single()
 
   if (error) throw error
   return user as User
 }
 
-export async function deleteUser(id: string): Promise<void> {
+// حذف مستخدم بناءً على الـ id
+export async function deleteUser(id: number | string): Promise<void> {
   if (!id) throw new Error("معرف المستخدم مطلوب")
-  const { error } = await supabase.from("Users").delete().eq("auth_id", id)
+
+  const { error } = await supabase.from("Users").delete().eq("id", id) // يعتمد على id الجدول الأساسي
+
   if (error) throw error
 }

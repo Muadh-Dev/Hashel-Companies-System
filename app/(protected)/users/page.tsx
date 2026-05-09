@@ -112,8 +112,8 @@ export default function UsersPage() {
     if (!deleteTarget) return
     setIsDeleting(true)
     try {
-      await deleteUser(deleteTarget.auth_id)
-      removeUserLocal(deleteTarget.auth_id)
+      await deleteUser(deleteTarget.id)
+      removeUserLocal(deleteTarget.id) // حذف محلي باستخدام id
       toast.success("تم حذف المستخدم بنجاح")
       setDeleteTarget(null)
     } catch (error) {
@@ -153,7 +153,7 @@ export default function UsersPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {users.map((user) => (
-                <tr key={user.auth_id} className="hover:bg-muted/20">
+                <tr key={user.id} className="hover:bg-muted/20">
                   <td className="p-4 font-medium">{user.name}</td>
                   <td className="p-4">{user.email}</td>
                   <td className="p-4">

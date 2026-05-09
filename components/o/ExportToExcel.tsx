@@ -6,32 +6,43 @@ import ExcelJS from "exceljs"
 import { saveAs } from "file-saver"
 import { supabase } from "@/lib/supabase/supabaseSsrClient"
 
-// تعريف النوع مباشرة في المكون
+// تعريف النوع مطابق تماماً لـ useTransactions.ts
+type Company = {
+  establishment_number: string
+  social_insurance_number: string
+}
+
 type Transaction = {
   id: string
   resident_name: string
+  Wresident_name: string
   iqama_number: string
+  Wiqama_number: string
   nationality: string
   profession: string
   expiry_date: string | null
   payment_date: string | null
   unified_number_of_company: string
-  companies: {
-    establishment_number: string
-    social_insurance_number: string
-  } | null
+  companies: Company | null
   memo_number: string | null
   service_type: string
   work_permit: number
   passports: number
   phone_num: number
+  Wphone_num: number
+  iqama: number
   medical_insurance: number
+  medical_examination: number
   transport_fees: number
   other_fees: number
   agreed_amount: number
+  tashira_fees: number
   received_amount: number
   note: string
   created_at: string
+  working: string
+  tashira_number: string
+  hodod_number: string
 }
 
 export default function ExportToExcel() {
@@ -55,7 +66,6 @@ export default function ExportToExcel() {
     setIsExporting(true)
 
     try {
-      // جلب البيانات فقط عند الضغط على الزر
       const transactions = await fetchTransactions()
 
       if (!transactions || transactions.length === 0) {
@@ -64,20 +74,18 @@ export default function ExportToExcel() {
         return
       }
 
-      // إنشاء Workbook جديد
       const workbook = new ExcelJS.Workbook()
       workbook.creator = "نظام المعاملات"
       workbook.created = new Date()
 
-      // إضافة ورقة عمل
       const worksheet = workbook.addWorksheet("المعاملات", {
         properties: { tabColor: { argb: "2E86C1" } },
         views: [{ state: "frozen", ySplit: 1 }],
       })
 
-      // تعريف الأعمدة
+      // تعريف الأعمدة (تمت إضافة الأعمدة الجديدة)
       const columns = [
-        // المجموعة الأولى: معلومات أساسية (أزرق فاتح)
+        // المجموعة 1: معلومات أساسية
         { header: "تاريخ العملية", key: "created_at", width: 15, group: 1 },
         { header: "اسم المقيم", key: "resident_name", width: 25, group: 1 },
         { header: "رقم الإقامة", key: "iqama_number", width: 15, group: 1 },
@@ -85,7 +93,7 @@ export default function ExportToExcel() {
         { header: "المهنة", key: "profession", width: 20, group: 1 },
         { header: "رقم الجوال", key: "phone_num", width: 12, group: 1 },
 
-        // المجموعة الثانية: تفاصيل الخدمة والإقامة (أخضر فاتح)
+        // المجموعة 2: تفاصيل الخدمة والإقامة
         { header: "نوع الخدمة", key: "service_type", width: 15, group: 2 },
         { header: "انتهاء الإقامة", key: "expiry_date", width: 15, group: 2 },
         {
@@ -94,16 +102,22 @@ export default function ExportToExcel() {
           width: 12,
           group: 2,
         },
+        { header: "رقم التأشيرة", key: "tashira_number", width: 15, group: 2 },
+        { header: "رقم الحدود", key: "hodod_number", width: 15, group: 2 },
+        { header: "حالة العمل", key: "working", width: 12, group: 2 }, // working: نص
 
-        // المجموعة الثالثة: الرسوم (برتقالي/أصفر)
+        // المجموعة 3: الرسوم (تمت إضافة Medical Exam, Iqama, Tashira Fees)
         { header: "رخصة عمل", key: "work_permit", width: 12, group: 3 },
         { header: "جوازات", key: "passports", width: 10, group: 3 },
         { header: "تأمين طبي", key: "medical_insurance", width: 12, group: 3 },
+        { header: "كشف طبي", key: "medical_examination", width: 12, group: 3 },
+        { header: "رسوم الإقامة", key: "iqama", width: 12, group: 3 },
+        { header: "إصدار تأشيرة", key: "tashira_fees", width: 12, group: 3 },
         { header: "نقل", key: "transport_fees", width: 10, group: 3 },
         { header: "أخرى", key: "other_fees", width: 10, group: 3 },
         { header: "الإجمالي", key: "total", width: 12, group: 3 },
 
-        // المجموعة الرابعة: المدفوعات (أرجواني)
+        // المجموعة 4: المدفوعات
         { header: "المتفق عليه", key: "agreed_amount", width: 12, group: 4 },
         { header: "المستلم", key: "received_amount", width: 12, group: 4 },
         { header: "المتبقي", key: "remaining", width: 12, group: 4 },
@@ -115,7 +129,7 @@ export default function ExportToExcel() {
           group: 4,
         },
 
-        // المجموعة الخامسة: معلومات الشركة (رمادي/أزرق غامق)
+        // المجموعة 5: معلومات الشركة
         {
           header: "رقم الشركة الموحد",
           key: "unified_number_of_company",
@@ -135,15 +149,24 @@ export default function ExportToExcel() {
           group: 5,
         },
 
-        // المجموعة السادسة: ملاحظات (رمادي فاتح)
-        { header: "مذكرة", key: "memo_number", width: 15, group: 6 },
-        { header: "ملاحظة", key: "note", width: 30, group: 6 },
+        // المجموعة 6: بيانات الوسيط (جديدة)
+        { header: "اسم الوسيط", key: "Wresident_name", width: 20, group: 6 },
+        {
+          header: "رقم إقامة الوسيط",
+          key: "Wiqama_number",
+          width: 15,
+          group: 6,
+        },
+        { header: "جوال الوسيط", key: "Wphone_num", width: 12, group: 6 },
+
+        // المجموعة 7: ملاحظات أخرى
+        { header: "مذكرة", key: "memo_number", width: 15, group: 7 },
+        { header: "ملاحظة", key: "note", width: 30, group: 7 },
       ]
 
-      // تعيين الأعمدة
       worksheet.columns = columns
 
-      // تنسيق رأس الجدول
+      // تنسيق رأس الجدول والألوان (نفس السابق لكن مع زيادة المجموعات)
       const headerRow = worksheet.getRow(1)
       headerRow.height = 30
       headerRow.font = {
@@ -164,14 +187,14 @@ export default function ExportToExcel() {
         right: { style: "thin", color: { argb: "CCCCCC" } },
       }
 
-      // تلوين رؤوس الأعمدة حسب المجموعات
       const groupColors: { [key: number]: string } = {
         1: "2196F3", // أزرق - معلومات أساسية
-        2: "4CAF50", // أخضر - تفاصيل الخدمة
-        3: "FF9800", // برتقالي - الرسوم
+        2: "4CAF50", // أخضر - تفاصيل الخدمة والتأشيرة
+        3: "FF9800", // برتقالي - الرسوم والإجمالي
         4: "9C27B0", // أرجواني - المدفوعات
         5: "607D8B", // رمادي مزرق - معلومات الشركة
-        6: "757575", // رمادي - ملاحظات
+        6: "00BCD4", // فيروزي - بيانات الوسيط
+        7: "757575", // رمادي - ملاحظات
       }
 
       columns.forEach((col: any, index: number) => {
@@ -183,26 +206,32 @@ export default function ExportToExcel() {
         }
       })
 
-      // إضافة البيانات مع العمليات الحسابية الصحيحة
+      // إضافة البيانات مع الحسابات الصحيحة
       transactions.forEach((transaction: Transaction) => {
-        // 🔧 الإجمالي = مجموع كل الرسوم (أعمدة J إلى N)
-        // J: work_permit, K: passports, L: medical_insurance, M: transport_fees, N: other_fees
+        // استخراج جميع الرسوم (بما فيها الجديدة)
         const workPermit = Number(transaction.work_permit) || 0
         const passports = Number(transaction.passports) || 0
         const medicalInsurance = Number(transaction.medical_insurance) || 0
+        const medicalExamination = Number(transaction.medical_examination) || 0
+        const iqamaFee = Number(transaction.iqama) || 0
+        const tashiraFee = Number(transaction.tashira_fees) || 0
         const transportFees = Number(transaction.transport_fees) || 0
         const otherFees = Number(transaction.other_fees) || 0
 
         const totalAmount =
-          workPermit + passports + medicalInsurance + transportFees + otherFees
+          workPermit +
+          passports +
+          medicalInsurance +
+          medicalExamination +
+          iqamaFee +
+          tashiraFee +
+          transportFees +
+          otherFees
 
-        // 🔧 المتبقي = المتفق عليه - المستلم (عمود P - عمود Q)
         const agreedAmount = Number(transaction.agreed_amount) || 0
         const receivedAmount = Number(transaction.received_amount) || 0
-
         const remainingAmount = agreedAmount - receivedAmount
 
-        // حساب الأيام المتبقية في الإقامة
         const remainingDays = transaction.expiry_date
           ? Math.ceil(
               (new Date(transaction.expiry_date).getTime() -
@@ -211,19 +240,13 @@ export default function ExportToExcel() {
             )
           : 0
 
-        // تحديد حالة الدفع
         let paymentStatus: string
-        if (agreedAmount === 0) {
-          paymentStatus = "غير محدد"
-        } else if (remainingAmount <= 0) {
-          paymentStatus = "مدفوع بالكامل"
-        } else if (receivedAmount > 0 && remainingAmount > 0) {
+        if (agreedAmount === 0) paymentStatus = "غير محدد"
+        else if (remainingAmount <= 0) paymentStatus = "مدفوع بالكامل"
+        else if (receivedAmount > 0 && remainingAmount > 0)
           paymentStatus = "مدفوع جزئياً"
-        } else {
-          paymentStatus = "غير مدفوع"
-        }
+        else paymentStatus = "غير مدفوع"
 
-        // إضافة الصف
         worksheet.addRow({
           created_at: transaction.created_at
             ? new Date(transaction.created_at).toLocaleDateString("ar-SA")
@@ -238,15 +261,21 @@ export default function ExportToExcel() {
             ? new Date(transaction.expiry_date).toLocaleDateString("ar-SA")
             : "",
           remaining_days: remainingDays,
+          tashira_number: transaction.tashira_number || "",
+          hodod_number: transaction.hodod_number || "",
+          working: transaction.working || "",
           work_permit: workPermit,
           passports: passports,
           medical_insurance: medicalInsurance,
+          medical_examination: medicalExamination,
+          iqama: iqamaFee,
+          tashira_fees: tashiraFee,
           transport_fees: transportFees,
           other_fees: otherFees,
-          total: totalAmount, // ✅ هذا عمود O
-          agreed_amount: agreedAmount, // هذا عمود P
-          received_amount: receivedAmount, // هذا عمود Q
-          remaining: remainingAmount, // ✅ هذا عمود R = P - Q
+          total: totalAmount,
+          agreed_amount: agreedAmount,
+          received_amount: receivedAmount,
+          remaining: remainingAmount,
           payment_status: paymentStatus,
           payment_date: transaction.payment_date
             ? new Date(transaction.payment_date).toLocaleDateString("ar-SA")
@@ -257,14 +286,16 @@ export default function ExportToExcel() {
             transaction.companies?.establishment_number || "",
           social_insurance_number:
             transaction.companies?.social_insurance_number || "",
+          Wresident_name: transaction.Wresident_name || "",
+          Wiqama_number: transaction.Wiqama_number || "",
+          Wphone_num: transaction.Wphone_num || 0,
           memo_number: transaction.memo_number || "",
           note: transaction.note || "",
         })
       })
 
-      // تنسيق خلايا البيانات
+      // تنسيق باقي الخلايا (كما كان مع تحديث أرقام الأعمدة بسبب الإضافات)
       const dataRowCount = worksheet.rowCount
-
       for (let i = 2; i <= dataRowCount; i++) {
         const row = worksheet.getRow(i)
         row.height = 25
@@ -273,12 +304,8 @@ export default function ExportToExcel() {
           horizontal: "center",
           wrapText: true,
         }
-        row.font = {
-          name: "Arial",
-          size: 10,
-        }
+        row.font = { name: "Arial", size: 10 }
 
-        // تلوين خلفية الصفوف بالتناوب
         if (i % 2 === 0) {
           row.fill = {
             type: "pattern",
@@ -287,7 +314,6 @@ export default function ExportToExcel() {
           }
         }
 
-        // إضافة حدود للخلايا
         row.eachCell((cell) => {
           cell.border = {
             top: { style: "thin", color: { argb: "E0E0E0" } },
@@ -297,10 +323,11 @@ export default function ExportToExcel() {
           }
         })
 
-        // تنسيق الأعمدة الرقمية - ملاحظة: تم تعديل أرقام الأعمدة
-        // عمود J=10, K=11, L=12, M=13, N=14, O=15 (الإجمالي)
-        // عمود P=16, Q=17, R=18 (المتبقي)
-        const numberColumns = [6, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+        // الأعمدة الرقمية (تحديث الأرقام حسب الترتيب الجديد)
+        // الأعمدة: phone_num(6), work_permit(13), passports(14), medical_insurance(15), medical_examination(16), iqama(17), tashira_fees(18), transport_fees(19), other_fees(20), total(21), agreed_amount(22), received_amount(23), remaining(24), Wphone_num(28)
+        const numberColumns = [
+          6, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 28,
+        ]
         numberColumns.forEach((colIndex) => {
           const cell = row.getCell(colIndex)
           if (
@@ -311,14 +338,13 @@ export default function ExportToExcel() {
             const numValue = Number(cell.value)
             if (!isNaN(numValue)) {
               cell.numFmt = "#,##0"
-              // تحويل القيمة إلى رقم فعلي
               cell.value = numValue
             }
           }
         })
 
-        // تلوين عمود الإجمالي (O = 15)
-        const totalCell = row.getCell(15)
+        // تلوين عمود الإجمالي (العمود 21)
+        const totalCell = row.getCell(21)
         if (totalCell.value && typeof totalCell.value === "number") {
           totalCell.font = { bold: true, size: 11, color: { argb: "E65100" } }
           totalCell.fill = {
@@ -328,8 +354,8 @@ export default function ExportToExcel() {
           }
         }
 
-        // تلوين عمود المتبقي (R = 18)
-        const remainingCell = row.getCell(18)
+        // تلوين عمود المتبقي (العمود 24)
+        const remainingCell = row.getCell(24)
         if (remainingCell.value && typeof remainingCell.value === "number") {
           if (remainingCell.value > 0) {
             remainingCell.font = { color: { argb: "C62828" }, bold: true }
@@ -348,10 +374,9 @@ export default function ExportToExcel() {
           }
         }
 
-        // تلوين حالة الدفع (عمود S = 19)
-        const paymentStatusCell = row.getCell(19)
+        // تلوين حالة الدفع (العمود 25)
+        const paymentStatusCell = row.getCell(25)
         const statusValue = paymentStatusCell.value?.toString() || ""
-
         if (statusValue === "مدفوع بالكامل") {
           paymentStatusCell.font = { color: { argb: "2E7D32" }, bold: true }
           paymentStatusCell.fill = {
@@ -376,21 +401,12 @@ export default function ExportToExcel() {
         }
       }
 
-      // ضبط اتجاه الورقة من اليمين لليسار للعربية
-      worksheet.views = [
-        {
-          rightToLeft: true,
-          state: "frozen",
-          ySplit: 1,
-        },
-      ]
+      worksheet.views = [{ rightToLeft: true, state: "frozen", ySplit: 1 }]
 
-      // إنشاء وحفظ الملف
       const buffer = await workbook.xlsx.writeBuffer()
       const blob = new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       })
-
       const fileName = `المعاملات_${new Date().toLocaleDateString("ar-SA").replace(/\//g, "-")}.xlsx`
       saveAs(blob, fileName)
     } catch (error) {

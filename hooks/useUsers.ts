@@ -16,15 +16,15 @@ interface Permissions {
   annualRenewal: PermissionLevel
 }
 
-// النوع بعد التعديل
 export type User = {
+  id: number // المعرف الأساسي في قاعدة البيانات
   auth_id: string
   name: string
   email: string
   password: string
   is_admin: boolean
-  role: "مدير" | "مشرف" | "مخصص" // حقل اختياري
-  permissions: Permissions // حقل اختياري
+  role: "مدير" | "مشرف" | "مخصص"
+  permissions: Permissions
   created_at: string
 }
 
@@ -57,16 +57,16 @@ export function useUsers() {
     setUsers((prev) => [newUser, ...prev])
   }, [])
 
+  // التعديل هنا: نستخدم id للمقارنة وتحديث المصفوفة محلياً
   const updateUserLocal = useCallback((updatedUser: User) => {
     setUsers((prev) =>
-      prev.map((user) =>
-        user.auth_id === updatedUser.auth_id ? updatedUser : user
-      )
+      prev.map((user) => (user.id === updatedUser.id ? updatedUser : user))
     )
   }, [])
 
-  const removeUserLocal = useCallback((auth_id: string) => {
-    setUsers((prev) => prev.filter((user) => user.auth_id !== auth_id))
+  // التعديل هنا: نستخدم id لحذف المستخدم من المصفوفة محلياً
+  const removeUserLocal = useCallback((id: number) => {
+    setUsers((prev) => prev.filter((user) => user.id !== id))
   }, [])
 
   return {
