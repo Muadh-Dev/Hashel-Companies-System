@@ -135,6 +135,7 @@ export default function OperationsContent() {
       const idEst = item.companies?.establishment_number || ""
       const idSocial = item.companies?.social_insurance_number || ""
       const idUnified = item.unified_number_of_company || ""
+      const idTashira = item.tashira_number || ""
       const idMemo = item.memo_number || ""
       const matchesSearch =
         name.includes(searchQuery.toLowerCase()) ||
@@ -142,6 +143,7 @@ export default function OperationsContent() {
         idEst.includes(searchQuery) ||
         idSocial.includes(searchQuery) ||
         idUnified.includes(searchQuery) ||
+        idTashira.includes(searchQuery) ||
         idMemo.includes(searchQuery)
       const matchesTab = activeTab === "الكل" || item.service_type === activeTab
       return matchesSearch && matchesTab
