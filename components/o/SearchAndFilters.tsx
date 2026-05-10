@@ -76,7 +76,7 @@ export default function SearchAndFilters({
           <Search className="absolute top-1/2 right-4 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-600" />
           <input
             type="text"
-            placeholder="ابحث بالاسم، رقم الإقامة، رقم المنشأة، رقم المذكرة والرقم الموحد..."
+            placeholder="ابحث بالاسم، رقم الإقامة، رقم المنشأة، رقم المذكرة والرقم الموحد، ورقم التأشيرة..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="h-14 w-full rounded-2xl border border-slate-200 bg-white pr-12 pl-4 text-lg shadow-sm transition-all outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900"
